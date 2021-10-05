@@ -1,0 +1,35 @@
+{
+  "canisters": {
+    "candao": {
+      "main": "src/candao/main.mo",
+      "type": "motoko"
+    },
+    "candao_assets": {
+      "dependencies": [
+        "candao"
+      ],
+      "frontend": {
+        "entrypoint": "src/candao_assets/src/index.html"
+      },
+      "source": [
+        "src/candao_assets/assets",
+        "dist/candao_assets/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "dfx": "0.8.1",
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  },
+  "version": 1
+}
