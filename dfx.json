@@ -1,20 +1,17 @@
 {
   "canisters": {
     "candao": {
-      "main": "src/candao/main.mo",
-      "type": "motoko"
+      "build": "cargo build --target wasm32-unknown-unknown --package candao --release",
+      "candid": "src/candao/src/candao.did",
+      "wasm": "target/wasm32-unknown-unknown/release/candao.wasm",
+      "type": "custom"
     },
     "candao_assets": {
-      "dependencies": [
-        "candao"
-      ],
+      "dependencies": ["candao"],
       "frontend": {
         "entrypoint": "src/candao_assets/src/index.html"
       },
-      "source": [
-        "src/candao_assets/assets",
-        "dist/candao_assets/"
-      ],
+      "source": ["src/candao_assets/assets", "dist/candao_assets/"],
       "type": "assets"
     }
   },
