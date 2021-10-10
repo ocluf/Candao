@@ -5,7 +5,7 @@ import {
   HttpAgentOptions,
 } from "@dfinity/agent";
 
-import { idlFactory } from "../declarations/candao/candao.did.js";
+import { idlFactory } from "./idlFactory";
 
 type CreateAgentOptions = {
   agentOptions?: HttpAgentOptions;

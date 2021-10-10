@@ -24,6 +24,8 @@ const Home: NextPage = () => {
       authClientRef.current = authClient;
       if (await authClient.isAuthenticated()) {
         handleAuth();
+      } else {
+        setLoggedIn(LoginState.LoggedOut);
       }
     })();
   }, []);
@@ -66,14 +68,15 @@ const Home: NextPage = () => {
 
       <nav className="flex justify-between py-4">
         <a className="">CanDAO</a>
-        {loggedIn === LoginState.LoggedOut ? (
+        {loggedIn === LoginState.LoggedOut && (
           <button
             className="border rounded px-2 py-1 hover:bg-gray-200"
             onClick={onLogin}
           >
             Log in
           </button>
-        ) : (
+        )}{" "}
+        {loggedIn === LoginState.LoggedIn && (
           <button
             className="border rounded px-2 py-1 hover:bg-gray-200"
             onClick={onLogout}
