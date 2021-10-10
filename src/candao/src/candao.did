@@ -1,4 +1,3 @@
 service : {
     "print": () -> () query;
-    "poop": () -> () query;
 }
