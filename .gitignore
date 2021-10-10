@@ -20,3 +20,4 @@ dist/
 
 local_canisters.json
 src/declarations/
+src/candao_assets/declarations/

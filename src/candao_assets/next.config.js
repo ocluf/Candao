@@ -39,31 +39,41 @@ function initCanisterIds() {
 
   console.log(network);
 
-  canisters =
+  const canisterIds =
     network === "local"
       ? { ...(localCanisters || {}), ...(localIiCanister || {}) }
       : prodCanisters;
 
   // console.log(canisters);
 
-  // for (const canister in canisters) {
-  //   process.env[canister.toUpperCase() + "_CANISTER_ID"] =
-  //     canisters[canister][network];
-  // }
-  return canisters;
+  return { canisterIds, network };
 }
-const canisterIds = initCanisterIds();
+const { canisterIds, network } = initCanisterIds();
+
+// console.log(
+//   Object.assign(
+//     {},
+//     ...Object.keys(canisterIds)
+//       .filter((canisterName) => canisterName !== "__Candid_UI")
+//       .map((canisterName) => ({
+//         [canisterName.toUpperCase() + "_CANISTER_ID"]:
+//           canisterIds[canisterName].local,
+//       }))
+//   )
+// );
 
 /** @type {import('next').NextConfig} */
 module.exports = {
   reactStrictMode: true,
   env: Object.assign(
-    {},
+    {
+      DFX_NETWORK: network,
+    },
     ...Object.keys(canisterIds)
       .filter((canisterName) => canisterName !== "__Candid_UI")
       .map((canisterName) => ({
         [canisterName.toUpperCase() + "_CANISTER_ID"]:
-          canisterIds[canisterName].local,
+          canisterIds[canisterName][network],
       }))
   ),
 };

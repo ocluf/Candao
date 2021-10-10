@@ -13,7 +13,7 @@
     "prebuild": "npm run copy:types",
     "start": "npm run copy:types && cd src/candao_assets && yarn dev",
     "prestart": "npm run copy:types",
-    "copy:types": "rsync -avr .dfx/$(echo ${DFX_NETWORK:-'**'})/canisters/** --exclude='assets/' --exclude='idl/' --exclude='*.wasm' --delete src/declarations"
+    "copy:types": "rsync -avr .dfx/$(echo ${DFX_NETWORK:-'**'})/canisters/** --exclude='assets/' --exclude='idl/' --exclude='*.wasm' --delete src/candao_assets/declarations"
   },
   "browserslist": [
     "last 2 chrome version",
