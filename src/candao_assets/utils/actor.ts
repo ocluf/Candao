@@ -12,8 +12,13 @@ type CreateAgentOptions = {
   actorOptions?: ActorConfig;
 };
 
-export function createActor(options?: CreateAgentOptions) {
-  const hostOptions = { host: "http://localhost:8000" };
+export function createActor<T>(options?: CreateAgentOptions) {
+  const hostOptions = {
+    host:
+      process.env.DFX_NETWORK === "ic"
+        ? `https://${process.env.CANDAO_CANISTER_ID}.ic0.app`
+        : "http://localhost:8000",
+  };
   if (!options) {
     options = {
       agentOptions: hostOptions,
@@ -37,7 +42,7 @@ export function createActor(options?: CreateAgentOptions) {
   }
 
   // Creates an actor with using the candid interface and the HttpAgent
-  return Actor.createActor(idlFactory, {
+  return Actor.createActor<T>(idlFactory, {
     agent,
     canisterId: process.env.CANDAO_CANISTER_ID!,
     ...options?.actorOptions,

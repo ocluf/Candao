@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { Actor } from "@dfinity/agent";
+import { Actor, ActorSubclass } from "@dfinity/agent";
 import { createActor } from "../utils/actor";
+import { _SERVICE } from "../declarations/candao/candao.did";
+
+type CandaoActor = ActorSubclass<_SERVICE>;
 
 const actorContext = React.createContext<{
-  actor: Actor | null;
-  setActor: (a: Actor) => void;
+  actor: CandaoActor | null;
+  setActor: (a: CandaoActor) => void;
 }>({ actor: null, setActor: () => {} });
 
 export const ActorProvider: React.FC = ({ children }) => {
-  const [actor, setActor] = useState<Actor | null>(null);
+  const [actor, setActor] = useState<CandaoActor | null>(null);
 
   useEffect(() => {
     setActor(
-      createActor({
+      createActor<_SERVICE>({
         agentOptions: { host: `http://localhost:8000` },
       })
     );

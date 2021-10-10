@@ -17,6 +17,7 @@ const Home: NextPage = () => {
   );
   const authClientRef = useRef<AuthClient | null>(null);
   const { actor, setActor } = useActor();
+  const [memberCount, setMemberCount] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -29,6 +30,14 @@ const Home: NextPage = () => {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      if (actor) {
+        setMemberCount((await actor.get_members()).length);
+      }
+    })();
+  }, [actor, setMemberCount]);
 
   const onLogin = () => {
     authClientRef.current?.login({
@@ -101,6 +110,26 @@ const Home: NextPage = () => {
           Logged in as{" "}
           {authClientRef.current?.getIdentity().getPrincipal().toString()}
         </p>
+      )}
+
+      {memberCount !== null && (
+        <div className="text-center mt-24">
+          <p className=""> DAO members: {memberCount}</p>
+
+          {memberCount === 0 && loggedIn === LoginState.LoggedIn && (
+            <button className="mt-4 bg-green-300 rounded px-2 py-1 hover:bg-green-400 ">
+              Claim this DAO
+            </button>
+          )}
+          {memberCount === 0 && loggedIn === LoginState.LoggedOut && (
+            <button
+              className="mt-4 bg-green-300 rounded px-2 py-1 hover:bg-green-400 "
+              onClick={onLogin}
+            >
+              Log in to claim this DAO
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

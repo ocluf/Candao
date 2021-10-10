@@ -126,6 +126,7 @@ version = "0.1.0"
 dependencies = [
  "ic-cdk",
  "ic-cdk-macros",
+ "serde",
 ]
 
 [[package]]
