@@ -7,11 +7,12 @@
       "type": "custom"
     },
     "candao_assets": {
-      "dependencies": ["candao"],
-      "frontend": {
-        "entrypoint": "src/candao_assets/src/index.html"
-      },
-      "source": ["src/candao_assets/assets", "dist/candao_assets/"],
+      "dependencies": [
+        "candao"
+      ],
+      "source": [
+        "src/candao_assets/out"
+      ],
       "type": "assets"
     }
   },
