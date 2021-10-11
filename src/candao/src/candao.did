@@ -5,7 +5,7 @@ type Member = record {
 
 type ProposalType = variant {
     AddMember: Member;
-    RemoveMember;
+    RemoveMember: principal;
     CreateCanister;
     InstallCanister;
     DeleteCanister;
@@ -17,8 +17,14 @@ type ProposalType = variant {
 
 type ProposalStatus = variant {
     InProgress;
-    Accepted;
+    Executed;
     Rejected;
+    Failed;
+};
+
+type Vote = variant {
+    Yes;
+    No;
 };
 
 type Proposal = record {
@@ -35,6 +41,7 @@ type Proposal = record {
 service : {
     "take_control": (text) -> (bool);
     "create_proposal": (ProposalType) -> (bool);
+    "vote": (Vote) -> (bool);
     "get_members": () -> (vec Member) query;
     "get_proposals": () -> (vec Proposal) query;
 
