@@ -4,37 +4,33 @@ type Member = record {
 };
 
 type ProposalType = variant {
-    AddMember: Member;
-    RemoveMember;
-    CreateCanister;
-    InstallCanister;
-    DeleteCanister;
-    StartCanister;
-    StopCanister;
-    UpdateCanisterSettings;
+    add_member: record { Member };
+    remove_member;
+    create_canister;
+    install_canister;
+    delete_canister;
+    start_canister;
+    stop_canister;
+    update_canister_settings;
 };
 
-
 type ProposalStatus = variant {
-    InProgress;
-    Accepted;
-    Rejected;
+    in_progress;
+    accepted;
+    rejected;
 };
 
 type Proposal = record {
-    proposal_id: nat64;
     proposer: principal;
-    proposal_date: nat64;
+    proposal_date: nat;
     proposal_type: ProposalType;
     proposal_status: ProposalStatus;
     yes_votes: vec principal;
     no_votes: vec principal;
 };
 
-
 service : {
     "take_control": (text) -> (bool);
-    "create_proposal": (ProposalType) -> (bool);
     "get_members": () -> (vec Member) query;
     "get_proposals": () -> (vec Proposal) query;
 
