@@ -5,7 +5,7 @@ type Member = record {
 
 type ProposalType = variant {
     AddMember: Member;
-    RemoveMember;
+    RemoveMember: principal;
     CreateCanister;
     InstallCanister;
     DeleteCanister;
@@ -17,8 +17,14 @@ type ProposalType = variant {
 
 type ProposalStatus = variant {
     InProgress;
-    Accepted;
+    Executed;
     Rejected;
+    Failed;
+};
+
+type Vote = variant {
+    Yes;
+    No;
 };
 
 type Proposal = record {
@@ -31,10 +37,29 @@ type Proposal = record {
     no_votes: vec principal;
 };
 
+type TakeControlResponse = variant {
+    Success;
+    NoAnonymous;
+    AlreadyTaken;
+};
+
+type CreateProposalResponse = variant {
+    Success;
+    NoPermission;
+};
+
+type VoteResponse = variant {
+    VoteCast;
+    NoPermission;
+    AlreadyVoted;
+    InvalidProposalId;
+    AlreadyDecided;
+}
 
 service : {
-    "take_control": (text) -> (bool);
-    "create_proposal": (ProposalType) -> (bool);
+    "take_control": (text) -> (TakeControlResponse); 
+    "create_proposal": (ProposalType) -> (CreateProposalResponse);
+    "vote": (nat64, Vote) -> (VoteResponse);
     "get_members": () -> (vec Member) query;
     "get_proposals": () -> (vec Proposal) query;
 
