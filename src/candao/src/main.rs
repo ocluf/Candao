@@ -6,6 +6,12 @@ use std::cell::RefCell;
 use std::convert::TryInto;
 
 #[derive(Clone, CandidType, Deserialize)]
+struct Member {
+    pub principal_id: Principal,
+    pub name: String,
+}
+
+#[derive(Clone, CandidType, Deserialize)]
 enum ProposalType {
     AddMember(Member),
     RemoveMember(Principal),
@@ -26,12 +32,6 @@ enum ProposalStatus {
 }
 
 #[derive(Clone, CandidType, Deserialize)]
-enum Vote {
-    Yes,
-    No,
-}
-
-#[derive(Clone, CandidType, Deserialize)]
 struct Proposal {
     pub proposal_id: u64,
     pub proposer: Principal,
@@ -43,9 +43,31 @@ struct Proposal {
 }
 
 #[derive(Clone, CandidType, Deserialize)]
-struct Member {
-    pub principal_id: Principal,
-    pub name: String,
+enum Vote {
+    Yes,
+    No,
+}
+
+#[derive(CandidType, Deserialize)]
+enum TakeControlResponse {
+    Success,
+    NoAnonymous,
+    AlreadyTaken,
+}
+
+#[derive(CandidType, Deserialize)]
+enum CreateProposalResponse {
+    Success,
+    NoPermission,
+}
+
+#[derive(CandidType, Deserialize)]
+enum VoteResponse {
+    VoteCast,
+    NoPermission,
+    AlreadyVoted,
+    InvalidProposalId,
+    AlreadyDecided,
 }
 
 #[derive(CandidType)]
@@ -68,25 +90,25 @@ thread_local! {
 }
 
 #[update]
-fn take_control(name: String) -> bool {
+fn take_control(name: String) -> TakeControlResponse {
     let principal_id = caller();
     if principal_id == Principal::anonymous() {
-        return false;
+        return TakeControlResponse::NoAnonymous;
     }
     let members_empty = STATE.with(|s| s.members.borrow().len() == 0);
     if members_empty {
         let new_member = Member { principal_id, name };
         add_member(new_member);
+        return TakeControlResponse::Success;
     }
-    //TODO: replace with proper response message enum
-    return members_empty;
+    return TakeControlResponse::AlreadyTaken;
 }
 
 #[update]
-fn create_proposal(proposal_type: ProposalType) -> bool {
+fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
     let proposer = caller();
     if !is_member(proposer) {
-        return false;
+        return CreateProposalResponse::NoPermission;
     }
     let proposal_id = STATE.with(|s| s.proposals.borrow().len().try_into().unwrap());
     let proposal = Proposal {
@@ -101,15 +123,14 @@ fn create_proposal(proposal_type: ProposalType) -> bool {
     STATE.with(|s| s.proposals.borrow_mut().push(proposal));
     STATE.with(|s| check_votes(s.proposals.borrow_mut().last_mut().unwrap()));
 
-    //TODO replace with proper response message enum
-    return true;
+    return CreateProposalResponse::Success;
 }
 
 #[update]
-fn vote(proposal_id: u64, ballot: Vote) -> bool {
+fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
     let voter = caller();
     if !is_member(voter) {
-        return false;
+        return VoteResponse::NoPermission;
     }
     STATE.with(|m| {
         match m
@@ -119,6 +140,9 @@ fn vote(proposal_id: u64, ballot: Vote) -> bool {
             .find(|p| p.proposal_id == proposal_id)
         {
             Some(proposal) => {
+                if !matches!(proposal.proposal_status, ProposalStatus::InProgress) {
+                    return VoteResponse::AlreadyDecided;
+                }
                 if !proposal.no_votes.contains(&voter) && !proposal.yes_votes.contains(&voter) {
                     match ballot {
                         Vote::Yes => {
@@ -128,16 +152,14 @@ fn vote(proposal_id: u64, ballot: Vote) -> bool {
                             proposal.no_votes.push(voter);
                         }
                     }
-                    check_votes(proposal); //should this be a seperate update call?
-                    return true;
+                    check_votes(proposal);
+                    return VoteResponse::VoteCast;
                 } else {
-                    // already voted
-                    return false;
+                    return VoteResponse::AlreadyVoted;
                 }
             }
             None => {
-                // no proposal with that id
-                return false;
+                return VoteResponse::InvalidProposalId;
             }
         }
     })
