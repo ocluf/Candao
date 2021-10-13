@@ -5,6 +5,8 @@ use ic_cdk_macros::{query, update};
 use std::cell::RefCell;
 use std::convert::TryInto;
 
+mod lifecycle;
+
 #[derive(Clone, CandidType, Deserialize)]
 struct Member {
     pub principal_id: Principal,
@@ -70,23 +72,23 @@ enum VoteResponse {
     AlreadyDecided,
 }
 
-#[derive(CandidType)]
-struct State {
-    members: RefCell<Vec<Member>>,
-    proposals: RefCell<Vec<Proposal>>,
+#[derive(CandidType, Deserialize)]
+pub struct State {
+    members: Vec<Member>,
+    proposals: Vec<Proposal>,
 }
 
 impl Default for State {
     fn default() -> Self {
         Self {
-            members: RefCell::new(vec![]),
-            proposals: RefCell::new(vec![]),
+            members: vec![],
+            proposals: vec![],
         }
     }
 }
 
 thread_local! {
-    static STATE: State = State::default();
+    pub static STATE: RefCell<State> = RefCell::default()
 }
 
 #[update]
@@ -95,7 +97,7 @@ fn take_control(name: String) -> TakeControlResponse {
     if principal_id == Principal::anonymous() {
         return TakeControlResponse::NoAnonymous;
     }
-    let members_empty = STATE.with(|s| s.members.borrow().len() == 0);
+    let members_empty = STATE.with(|s| s.borrow().members.len() == 0);
     if members_empty {
         let new_member = Member { principal_id, name };
         add_member(new_member);
@@ -110,7 +112,7 @@ fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
     if !is_member(proposer) {
         return CreateProposalResponse::NoPermission;
     }
-    let proposal_id = STATE.with(|s| s.proposals.borrow().len().try_into().unwrap());
+    let proposal_id = STATE.with(|s| s.borrow().proposals.len().try_into().unwrap());
     let proposal = Proposal {
         proposal_id,
         proposer,
@@ -120,8 +122,8 @@ fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
         yes_votes: vec![proposer],
         no_votes: vec![],
     };
-    STATE.with(|s| s.proposals.borrow_mut().push(proposal));
-    STATE.with(|s| check_votes(s.proposals.borrow_mut().last_mut().unwrap()));
+    STATE.with(|s| s.borrow_mut().proposals.push(proposal));
+    STATE.with(|s| check_votes(s.borrow_mut().proposals.last_mut().unwrap()));
 
     return CreateProposalResponse::Success;
 }
@@ -134,8 +136,8 @@ fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
     }
     STATE.with(|m| {
         match m
-            .proposals
             .borrow_mut()
+            .proposals
             .iter_mut()
             .find(|p| p.proposal_id == proposal_id)
         {
@@ -168,14 +170,14 @@ fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
 #[query]
 fn get_members() -> Vec<Member> {
     STATE.with(|s| {
-        return s.members.borrow().clone();
+        return s.borrow().members.clone();
     })
 }
 
 #[query]
 fn get_proposals() -> Vec<Proposal> {
     STATE.with(|s| {
-        return s.proposals.borrow().clone();
+        return s.borrow().proposals.clone();
     })
 }
 
@@ -183,7 +185,7 @@ fn check_votes(proposal: &mut Proposal) {
     if !matches!(proposal.proposal_status, ProposalStatus::InProgress) {
         return;
     }
-    let total_members = STATE.with(|s| s.members.borrow().len());
+    let total_members = STATE.with(|s| s.borrow().members.len());
     let majority = total_members / 2 + 1;
     let nr_of_yes = proposal.yes_votes.len();
     let nr_of_no = proposal.no_votes.len();
@@ -203,12 +205,12 @@ fn check_votes(proposal: &mut Proposal) {
 fn execute(proposal: &Proposal) -> Result<(), ()> {
     match &proposal.proposal_type {
         ProposalType::AddMember(member) => {
-            STATE.with(|s| s.members.borrow_mut().push(member.clone()));
+            STATE.with(|s| s.borrow_mut().members.push(member.clone()));
             return Ok(());
         }
         ProposalType::RemoveMember(principal) => STATE.with(|s| {
-            s.members
-                .borrow_mut()
+            s.borrow_mut()
+                .members
                 .retain(|m| m.principal_id != *principal);
             return Ok(());
         }),
@@ -223,8 +225,8 @@ fn execute(proposal: &Proposal) -> Result<(), ()> {
 
 fn is_member(principal: Principal) -> bool {
     STATE.with(|s| {
-        s.members
-            .borrow()
+        s.borrow()
+            .members
             .iter()
             .find(|m| m.principal_id == principal)
             .is_some()
@@ -232,7 +234,7 @@ fn is_member(principal: Principal) -> bool {
 }
 
 fn add_member(new_member: Member) {
-    STATE.with(|s| s.members.borrow_mut().push(new_member))
+    STATE.with(|s| s.borrow_mut().members.push(new_member))
 }
 
 fn main() {}

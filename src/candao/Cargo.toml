@@ -12,3 +12,4 @@ crate-type = ["cdylib"]
 serde = "1"
 ic-cdk = "0.3.2"
 ic-cdk-macros = "0.3.2"
+candid = "0.7.8"
