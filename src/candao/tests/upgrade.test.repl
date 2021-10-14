@@ -19,16 +19,33 @@ let _ = call canister.get_members();
 assert _ == vec {};
 
 
-let _ = call canister.take_control("Alice");
+let _ = call canister.take_control();
 assert _ == variant { Success };
 
 let _ = call canister.get_members();
 assert _ == vec {
   record {
-    name = "Alice";
+    name = "";
+    description = "";
     principal_id = alice;
   }
 };
+
+let _ = call canister.update_member_info("Alice", "Alice is not real");
+assert _ == variant {Success};
+
+let _  = call canister.get_dao_info();
+assert _ == record {
+  title = "CanDAO";
+  description = "";
+};
+
+let _ = call canister.update_dao_info(
+  record {
+    title = "TestTitle";
+    description = "I am a DAO";
+  }
+) ; 
 
 let _ = call ic.install_code(
   record {
@@ -43,6 +60,13 @@ let _ = call canister.get_members();
 assert _ == vec {
   record {
     name = "Alice";
+    description = "Alice is not real";
     principal_id = alice;
   }
+};  
+
+let _  = call canister.get_dao_info();
+assert _ == record {
+  title = "TestTitle";
+  description = "I am a DAO";
 };
