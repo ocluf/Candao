@@ -10,8 +10,8 @@ if [ ! -f /usr/local/bin/ic-repl ]; then
         Darwin*)    IC_REPL_NAME=ic-repl-macos;;
     esac
 
-    wget https://github.com/chenyan2002/ic-repl/releases/download/2021-09-18/${IC_REPL_NAME}
-    cp ./ic-repl-macos /usr/local/bin/ic-repl
+    wget https://github.com/chenyan2002/ic-repl/releases/download/2021-09-18/${IC_REPL_NAME} -O ${IC_REPL_NAME}
+    cp ./${IC_REPL_NAME} /usr/local/bin/ic-repl
     chmod a+x /usr/local/bin/ic-repl
     cd -
   fi
