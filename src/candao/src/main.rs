@@ -11,6 +11,7 @@ mod lifecycle;
 struct Member {
     pub principal_id: Principal,
     pub name: String,
+    pub description: String,
 }
 
 #[derive(Clone, CandidType, Deserialize)]
@@ -64,6 +65,12 @@ enum CreateProposalResponse {
 }
 
 #[derive(CandidType, Deserialize)]
+enum UpdateResponse {
+    Success,
+    NoPermission,
+}
+
+#[derive(CandidType, Deserialize)]
 enum VoteResponse {
     VoteCast,
     NoPermission,
@@ -72,8 +79,15 @@ enum VoteResponse {
     AlreadyDecided,
 }
 
-#[derive(CandidType, Deserialize)]
+#[derive(Clone, CandidType, Deserialize)]
+struct DaoInfo {
+    title: String,
+    description: String,
+}
+
+#[derive(Clone, CandidType, Deserialize)]
 pub struct State {
+    info: DaoInfo,
     members: Vec<Member>,
     proposals: Vec<Proposal>,
 }
@@ -81,6 +95,10 @@ pub struct State {
 impl Default for State {
     fn default() -> Self {
         Self {
+            info: DaoInfo {
+                title: "CanDAO".to_string(),
+                description: "".to_string(),
+            },
             members: vec![],
             proposals: vec![],
         }
@@ -92,14 +110,18 @@ thread_local! {
 }
 
 #[update]
-fn take_control(name: String) -> TakeControlResponse {
+fn take_control() -> TakeControlResponse {
     let principal_id = caller();
     if principal_id == Principal::anonymous() {
         return TakeControlResponse::NoAnonymous;
     }
     let members_empty = STATE.with(|s| s.borrow().members.len() == 0);
     if members_empty {
-        let new_member = Member { principal_id, name };
+        let new_member = Member {
+            principal_id: principal_id,
+            name: "".to_string(),
+            description: "".to_string(),
+        };
         add_member(new_member);
         return TakeControlResponse::Success;
     }
@@ -167,6 +189,33 @@ fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
     })
 }
 
+#[update]
+fn update_member_info(name: String, description: String) -> UpdateResponse {
+    let caller = caller();
+    STATE.with(|s| {
+        let mut state = s.borrow_mut();
+        let optional_member = state.members.iter_mut().find(|m| m.principal_id == caller);
+        match optional_member {
+            Some(member) => {
+                member.name = name;
+                member.description = description;
+                return UpdateResponse::Success;
+            }
+            None => return UpdateResponse::NoPermission,
+        }
+    })
+}
+
+#[update]
+fn update_dao_info(dao_info: DaoInfo) -> UpdateResponse {
+    let caller = caller();
+    if is_member(caller) {
+        STATE.with(|s| s.borrow_mut().info = dao_info);
+        return UpdateResponse::Success;
+    }
+    return UpdateResponse::NoPermission;
+}
+
 #[query]
 fn get_members() -> Vec<Member> {
     STATE.with(|s| {
@@ -178,6 +227,13 @@ fn get_members() -> Vec<Member> {
 fn get_proposals() -> Vec<Proposal> {
     STATE.with(|s| {
         return s.borrow().proposals.clone();
+    })
+}
+
+#[query]
+fn get_dao_info() -> DaoInfo {
+    STATE.with(|s| {
+        return s.borrow().info.clone();
     })
 }
 
