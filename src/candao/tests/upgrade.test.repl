@@ -1,0 +1,48 @@
+#!/usr/bin/ic-repl
+
+identity alice;
+
+
+let id = call ic.provisional_create_canister_with_cycles(record { settings = null; amount = null });
+let canister = id.canister_id;
+canister;
+let _ = call ic.install_code(
+  record {
+    arg = encode ();
+    wasm_module = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+    mode = variant { install };
+    canister_id = canister;
+  },
+);
+
+let _ = call canister.get_members();
+assert _ == vec {};
+
+
+let _ = call canister.take_control("Alice");
+assert _ == variant { Success };
+
+let _ = call canister.get_members();
+assert _ == vec {
+  record {
+    name = "Alice";
+    principal_id = alice;
+  }
+};
+
+let _ = call ic.install_code(
+  record {
+    arg = encode ();
+    wasm_module = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+    mode = variant { upgrade };
+    canister_id = canister;
+  },
+);
+
+let _ = call canister.get_members();
+assert _ == vec {
+  record {
+    name = "Alice";
+    principal_id = alice;
+  }
+};

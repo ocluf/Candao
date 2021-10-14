@@ -38,3 +38,13 @@ dfx deploy
 ```
 dfx deploy --network ic --no-wallet
 ```
+
+## Run tests
+
+The test framework is [ic-repl](https://github.com/chenyan2002/ic-repl). `test.sh` will try to install it on mac or linux.
+
+To run canister tests you need to have the project built (ie. existing wasm binaries).
+
+```
+sh test.sh
+```

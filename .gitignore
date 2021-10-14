@@ -18,6 +18,7 @@ node_modules/
 dist/
 .env
 
+.history
 local_canisters.json
 src/declarations/
 src/candao_assets/declarations/

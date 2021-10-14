@@ -91,6 +91,7 @@ thread_local! {
     pub static STATE: RefCell<State> = RefCell::default()
 }
 
+#[ic_cdk::export::candid::candid_method]
 #[update]
 fn take_control(name: String) -> TakeControlResponse {
     let principal_id = caller();
@@ -106,6 +107,7 @@ fn take_control(name: String) -> TakeControlResponse {
     return TakeControlResponse::AlreadyTaken;
 }
 
+#[ic_cdk::export::candid::candid_method]
 #[update]
 fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
     let proposer = caller();
@@ -128,6 +130,7 @@ fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
     return CreateProposalResponse::Success;
 }
 
+#[ic_cdk::export::candid::candid_method]
 #[update]
 fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
     let voter = caller();
@@ -167,6 +170,7 @@ fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
     })
 }
 
+#[ic_cdk::export::candid::candid_method(query)]
 #[query]
 fn get_members() -> Vec<Member> {
     STATE.with(|s| {
@@ -174,6 +178,7 @@ fn get_members() -> Vec<Member> {
     })
 }
 
+#[ic_cdk::export::candid::candid_method(query)]
 #[query]
 fn get_proposals() -> Vec<Proposal> {
     STATE.with(|s| {
@@ -238,3 +243,10 @@ fn add_member(new_member: Member) {
 }
 
 fn main() {}
+
+ic_cdk::export::candid::export_service!();
+
+#[ic_cdk_macros::query(name = "__get_candid_interface_tmp_hack")]
+fn export_candid() -> String {
+    __export_service()
+}
