@@ -1,6 +1,7 @@
 type Member = record {
     principal_id: principal;
-    name: text
+    name: text;
+    description: text;
 };
 
 type ProposalType = variant {
@@ -37,6 +38,11 @@ type Proposal = record {
     no_votes: vec principal;
 };
 
+type DaoInfo = record {
+    title: text;
+    description: text;
+};
+
 type TakeControlResponse = variant {
     Success;
     NoAnonymous;
@@ -44,6 +50,11 @@ type TakeControlResponse = variant {
 };
 
 type CreateProposalResponse = variant {
+    Success;
+    NoPermission;
+};
+
+type UpdateResponse = variant {
     Success;
     NoPermission;
 };
@@ -57,10 +68,13 @@ type VoteResponse = variant {
 }
 
 service : {
-    "take_control": (text) -> (TakeControlResponse); 
+    "take_control": () -> (TakeControlResponse); 
     "create_proposal": (ProposalType) -> (CreateProposalResponse);
+    "update_member_info": (text, text) -> (UpdateResponse);
+    "update_dao_info": (DaoInfo) -> (UpdateResponse);
     "vote": (nat64, Vote) -> (VoteResponse);
     "get_members": () -> (vec Member) query;
     "get_proposals": () -> (vec Proposal) query;
+    "get_dao_info": () -> (DaoInfo) query;
 
 }
