@@ -281,35 +281,14 @@ fn check_votes(proposal_id: u64) {
     if nr_of_yes > nr_of_no && nr_of_yes >= majority {
         let result = execute(&proposal);
         match result {
-            Ok(_) => STATE.with(|s| {
-                s.borrow_mut()
-                    .proposals
-                    .iter_mut()
-                    .find(|p| p.proposal_id == proposal_id)
-                    .unwrap()
-                    .proposal_status = ProposalStatus::Executed;
-            }),
-            Err(_) => STATE.with(|s| {
-                s.borrow_mut()
-                    .proposals
-                    .iter_mut()
-                    .find(|p| p.proposal_id == proposal_id)
-                    .unwrap()
-                    .proposal_status = ProposalStatus::Failed;
-            }),
+            Ok(_) => set_proposal_status(proposal_id, ProposalStatus::Executed),
+            Err(_) => set_proposal_status(proposal_id, ProposalStatus::Failed),
         }
     } else {
         let majority_of_no = nr_of_no > nr_of_yes && nr_of_no >= majority;
         let equal_yes_and_no = nr_of_no == nr_of_yes && nr_of_no + nr_of_yes == total_members;
         if majority_of_no || equal_yes_and_no {
-            STATE.with(|s| {
-                s.borrow_mut()
-                    .proposals
-                    .iter_mut()
-                    .find(|p| p.proposal_id == proposal_id)
-                    .unwrap()
-                    .proposal_status = ProposalStatus::Rejected;
-            })
+            set_proposal_status(proposal_id, ProposalStatus::Rejected)
         }
     }
 }
@@ -333,6 +312,17 @@ fn execute(proposal: &Proposal) -> Result<(), ()> {
         ProposalType::StopCanister => todo!(),
         ProposalType::UpdateCanisterSettings => todo!(),
     }
+}
+
+fn set_proposal_status(proposal_id: u64, status: ProposalStatus) {
+    STATE.with(|s| {
+        s.borrow_mut()
+            .proposals
+            .iter_mut()
+            .find(|p| p.proposal_id == proposal_id)
+            .unwrap()
+            .proposal_status = ProposalStatus::Executed;
+    })
 }
 
 fn find_proposal(id: u64) -> Option<Proposal> {
