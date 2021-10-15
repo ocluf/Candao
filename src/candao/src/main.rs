@@ -321,7 +321,7 @@ fn set_proposal_status(proposal_id: u64, status: ProposalStatus) {
             .iter_mut()
             .find(|p| p.proposal_id == proposal_id)
             .unwrap()
-            .proposal_status = ProposalStatus::Executed;
+            .proposal_status = status;
     })
 }
 
