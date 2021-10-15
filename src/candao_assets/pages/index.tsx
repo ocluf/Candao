@@ -1,10 +1,8 @@
 import type { NextPage } from "next";
 import { useRouter } from "next/dist/client/router";
-import Head from "next/head";
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useActor } from "../components/ActorProvider";
 import { LoginState, useAuth } from "../components/AuthProvider";
-import { Nav } from "../components/Nav";
 import { PublicNav } from "../components/PublicNav";
 import { useDaoInfo } from "../hooks/useDaoInfo";
 import { useDaoMembers } from "../hooks/useDaoMembers";
@@ -30,23 +28,24 @@ const Home: NextPage = () => {
 
   const [claimingDao, setClaimingDao] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (daoMembersLoading) return;
     if (typeof daoMembers === "undefined") return;
     if (!authClient) return;
     if (authState === LoginState.Uninitialized) return;
+    if (daoInfoLoading) return;
 
     if (daoMembers.length === 0) {
       // unclaimed
       if (authState === LoginState.LoggedOut) {
-        return setViewState(ViewState.Unclaimed);
+        setViewState(ViewState.Unclaimed);
       } else {
-        return setViewState(ViewState.UnclaimedLoggedIn);
+        setViewState(ViewState.UnclaimedLoggedIn);
       }
     } else {
       // claimed
       if (authState === LoginState.LoggedOut) {
-        return setViewState(ViewState.Claimed);
+        setViewState(ViewState.Claimed);
       } else if (
         daoMembers.find(
           (m) =>
@@ -54,14 +53,22 @@ const Home: NextPage = () => {
             authClient.getIdentity().getPrincipal().toString()
         )
       ) {
-        // logged in and member
-        router.push("/dao");
+        // logged in and is member of DAO
+        if (!daoInfo || !daoInfo.title) {
+          // dao claimed but hasn't been configured
+
+          // TODO: implement claim page
+          // router.push("/claim");
+          router.push("/dao");
+        } else {
+          router.push("/dao");
+        }
       } else {
         // logged in but no member
-        return setViewState(ViewState.ClaimedNonMember);
+        setViewState(ViewState.ClaimedNonMember);
       }
     }
-  }, [authState, daoMembersLoading, daoMembers, authClient]);
+  }, [authState, daoMembersLoading, daoMembers, authClient, daoInfoLoading]);
 
   async function claimDao() {
     setClaimingDao(true);
@@ -78,7 +85,7 @@ const Home: NextPage = () => {
     <div>
       <PublicNav></PublicNav>
 
-      <div className="max-w-2xl mx-auto pt-4">
+      <div className="max-w-2xl mx-auto pt-4 px-2 md:px-0">
         {[ViewState.Unclaimed, ViewState.UnclaimedLoggedIn].includes(
           viewState
         ) && (
