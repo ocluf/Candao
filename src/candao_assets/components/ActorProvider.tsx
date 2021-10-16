@@ -5,22 +5,15 @@ import { _SERVICE } from "../declarations/candao/candao.did";
 
 type CandaoActor = ActorSubclass<_SERVICE>;
 
+const initialActor = createActor<_SERVICE>();
+
 const actorContext = React.createContext<{
-  actor: CandaoActor | null;
+  actor: CandaoActor;
   setActor: (a: CandaoActor) => void;
-}>({ actor: null, setActor: () => {} });
+}>({ actor: initialActor, setActor: () => {} });
 
 export const ActorProvider: React.FC = ({ children }) => {
-  const [actor, setActor] = useState<CandaoActor | null>(null);
-
-  useEffect(() => {
-    setActor(
-      createActor<_SERVICE>({
-        agentOptions: { host: `http://localhost:8000` },
-      })
-    );
-  }, []);
-
+  const [actor, setActor] = useState<CandaoActor>(initialActor);
   return (
     <actorContext.Provider
       value={{
