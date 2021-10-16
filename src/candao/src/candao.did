@@ -4,10 +4,17 @@ type Member = record {
     description: text;
 };
 
+type Canister = record {
+    canister_id: principal;
+};
+
 type ProposalType = variant {
     AddMember: Member;
     RemoveMember: principal;
     CreateCanister;
+    LinkCanister: record {
+        canister_id: principal;
+    };
     InstallCanister;
     DeleteCanister;
     StartCanister;
@@ -52,6 +59,7 @@ type TakeControlResponse = variant {
 type CreateProposalResponse = variant {
     Success;
     NoPermission;
+    CanisterAlreadyAdded;
 };
 
 type UpdateResponse = variant {
@@ -74,7 +82,7 @@ service : {
     "update_dao_info": (DaoInfo) -> (UpdateResponse);
     "vote": (nat64, Vote) -> (VoteResponse);
     "get_members": () -> (vec Member) query;
+    "get_canisters": () -> (vec Canister) query;
     "get_proposals": () -> (vec Proposal) query;
     "get_dao_info": () -> (DaoInfo) query;
-
 }

@@ -1,5 +1,3 @@
-#!/usr/bin/ic-repl
-
 identity alice;
 
 

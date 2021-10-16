@@ -1,5 +1,3 @@
-#!/usr/bin/ic-repl
-
 identity alice;
 
 let id = call ic.provisional_create_canister_with_cycles(record { settings = null; amount = null });
@@ -50,13 +48,16 @@ let _ = call canister.create_proposal(variant
     {AddMember=record {
         name="erik"; 
         description="erik is fake"; 
-        principal_id=principal "rrkah-fqaaa-aaaaa-aaaaq-cai"
+        principal_id=bob;
         }
     });
 assert _ == variant { Success };
 
 let _  = call canister.get_members();
 
+assert _[0].principal_id == alice;
+assert _[1].name == "erik";
+assert _[1].principal_id == bob;
 
 
 
