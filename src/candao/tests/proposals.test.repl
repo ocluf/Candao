@@ -1,0 +1,62 @@
+#!/usr/bin/ic-repl
+
+identity alice;
+
+let id = call ic.provisional_create_canister_with_cycles(record { settings = null; amount = null });
+let canister = id.canister_id;
+canister;
+let _ = call ic.install_code(
+  record {
+    arg = encode ();
+    wasm_module = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+    mode = variant { install };
+    canister_id = canister;
+  },
+);
+
+let _ = call canister.get_members();
+assert _ == vec {};
+
+
+let _ = call canister.take_control();
+assert _ == variant { Success };
+
+let _ = call canister.get_members();
+assert _ == vec {
+  record {
+    name = "";
+    description = "";
+    principal_id = alice;
+  }
+};
+
+// alice is only member so bob should have no permission 
+
+identity bob;
+let _ = call canister.create_proposal(variant 
+    {AddMember=record {
+        name=""; 
+        description="asd"; 
+        principal_id=principal "rrkah-fqaaa-aaaaa-aaaaq-cai"
+        }
+    });
+assert _ == variant { NoPermission };
+
+// alice does have permission and is the only member so the proposal should be accepted immediately 
+
+identity alice; 
+
+let _ = call canister.create_proposal(variant 
+    {AddMember=record {
+        name="erik"; 
+        description="erik is fake"; 
+        principal_id=principal "rrkah-fqaaa-aaaaa-aaaaq-cai"
+        }
+    });
+assert _ == variant { Success };
+
+let _  = call canister.get_members();
+
+
+
+

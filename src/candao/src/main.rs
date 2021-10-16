@@ -147,7 +147,7 @@ fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
         no_votes: vec![],
     };
     STATE.with(|s| s.borrow_mut().proposals.push(proposal));
-    STATE.with(|s| check_votes(s.borrow_mut().proposals.last_mut().unwrap()));
+    check_votes(proposal_id);
 
     return CreateProposalResponse::Success;
 }
@@ -156,40 +156,57 @@ fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
 #[update]
 fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
     let voter = caller();
-    if !is_member(voter) {
+
+    let member = find_member(voter);
+    if member.is_none() {
         return VoteResponse::NoPermission;
     }
-    STATE.with(|m| {
-        match m
-            .borrow_mut()
+    let member = member.unwrap();
+
+    let proposal = find_proposal(proposal_id);
+    if proposal.is_none() {
+        return VoteResponse::InvalidProposalId;
+    }
+    let proposal = proposal.unwrap();
+
+    if !matches!(proposal.proposal_status, ProposalStatus::InProgress) {
+        return VoteResponse::AlreadyDecided;
+    }
+
+    let voted_yes = proposal
+        .yes_votes
+        .into_iter()
+        .find(|p| *p == member.principal_id)
+        .is_some();
+
+    let voted_no = proposal
+        .no_votes
+        .into_iter()
+        .find(|p| *p == member.principal_id)
+        .is_some();
+
+    if voted_yes || voted_no {
+        return VoteResponse::AlreadyVoted;
+    }
+
+    STATE.with(|s| {
+        let mut state = s.borrow_mut();
+        let proposal = state
             .proposals
             .iter_mut()
             .find(|p| p.proposal_id == proposal_id)
-        {
-            Some(proposal) => {
-                if !matches!(proposal.proposal_status, ProposalStatus::InProgress) {
-                    return VoteResponse::AlreadyDecided;
-                }
-                if !proposal.no_votes.contains(&voter) && !proposal.yes_votes.contains(&voter) {
-                    match ballot {
-                        Vote::Yes => {
-                            proposal.yes_votes.push(voter);
-                        }
-                        Vote::No => {
-                            proposal.no_votes.push(voter);
-                        }
-                    }
-                    check_votes(proposal);
-                    return VoteResponse::VoteCast;
-                } else {
-                    return VoteResponse::AlreadyVoted;
-                }
+            .unwrap();
+        match ballot {
+            Vote::Yes => {
+                proposal.yes_votes.push(voter);
             }
-            None => {
-                return VoteResponse::InvalidProposalId;
+            Vote::No => {
+                proposal.no_votes.push(voter);
             }
         }
-    })
+    });
+    check_votes(proposal_id);
+    return VoteResponse::VoteCast;
 }
 
 #[ic_cdk::export::candid::candid_method]
@@ -245,24 +262,34 @@ fn get_dao_info() -> DaoInfo {
     })
 }
 
-fn check_votes(proposal: &mut Proposal) {
+fn check_votes(proposal_id: u64) {
+    let proposal = find_proposal(proposal_id);
+    if proposal.is_none() {
+        return;
+    }
+    let proposal = proposal.unwrap();
     if !matches!(proposal.proposal_status, ProposalStatus::InProgress) {
         return;
     }
-    let total_members = STATE.with(|s| s.borrow().members.len());
+    let total_members = STATE.with(|s| {
+        return s.borrow().members.len();
+    });
+
     let majority = total_members / 2 + 1;
     let nr_of_yes = proposal.yes_votes.len();
     let nr_of_no = proposal.no_votes.len();
     if nr_of_yes > nr_of_no && nr_of_yes >= majority {
         let result = execute(&proposal);
         match result {
-            Ok(_) => proposal.proposal_status = ProposalStatus::Executed,
-            Err(_) => proposal.proposal_status = ProposalStatus::Failed,
+            Ok(_) => set_proposal_status(proposal_id, ProposalStatus::Executed),
+            Err(_) => set_proposal_status(proposal_id, ProposalStatus::Failed),
         }
-    } else if nr_of_no > nr_of_yes && nr_of_no >= majority {
-        proposal.proposal_status = ProposalStatus::Rejected;
-    } else if nr_of_no == nr_of_yes && nr_of_no + nr_of_yes == total_members {
-        proposal.proposal_status = ProposalStatus::Rejected;
+    } else {
+        let majority_of_no = nr_of_no > nr_of_yes && nr_of_no >= majority;
+        let equal_yes_and_no = nr_of_no == nr_of_yes && nr_of_no + nr_of_yes == total_members;
+        if majority_of_no || equal_yes_and_no {
+            set_proposal_status(proposal_id, ProposalStatus::Rejected)
+        }
     }
 }
 
@@ -285,6 +312,39 @@ fn execute(proposal: &Proposal) -> Result<(), ()> {
         ProposalType::StopCanister => todo!(),
         ProposalType::UpdateCanisterSettings => todo!(),
     }
+}
+
+fn set_proposal_status(proposal_id: u64, status: ProposalStatus) {
+    STATE.with(|s| {
+        s.borrow_mut()
+            .proposals
+            .iter_mut()
+            .find(|p| p.proposal_id == proposal_id)
+            .unwrap()
+            .proposal_status = status;
+    })
+}
+
+fn find_proposal(id: u64) -> Option<Proposal> {
+    return STATE.with(|s| {
+        return s
+            .borrow()
+            .proposals
+            .clone()
+            .into_iter()
+            .find(|p| p.proposal_id == id);
+    });
+}
+
+fn find_member(principal: Principal) -> Option<Member> {
+    return STATE.with(|s| {
+        return s
+            .borrow()
+            .members
+            .clone()
+            .into_iter()
+            .find(|m| m.principal_id == principal);
+    });
 }
 
 fn is_member(principal: Principal) -> bool {
