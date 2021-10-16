@@ -26,7 +26,7 @@ const navigation = [
   { name: "Proposals", href: "#", current: false },
 ];
 
-export const Nav: React.FC<{ showMenu: boolean }> = ({ showMenu = true }) => {
+export const Nav: React.FC<{ showMenu?: boolean }> = ({ showMenu = true }) => {
   const { authState, logout, login } = useAuth();
 
   const { daoInfo, daoInfoError, daoInfoLoading } = useDaoInfo();
