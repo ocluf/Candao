@@ -3,7 +3,6 @@ use ic_cdk::export::candid::{CandidType, Deserialize};
 use ic_cdk::export::Principal;
 use ic_cdk_macros::{query, update};
 use std::cell::RefCell;
-use std::convert::TryInto;
 
 mod lifecycle;
 
@@ -19,6 +18,7 @@ enum ProposalType {
     AddMember(Member),
     RemoveMember(Principal),
     CreateCanister,
+    LinkCanister { canister_id: Principal },
     InstallCanister,
     DeleteCanister,
     StartCanister,
@@ -62,6 +62,7 @@ enum TakeControlResponse {
 enum CreateProposalResponse {
     Success,
     NoPermission,
+    CanisterAlreadyAdded,
 }
 
 #[derive(CandidType, Deserialize)]
@@ -86,10 +87,18 @@ struct DaoInfo {
 }
 
 #[derive(Clone, CandidType, Deserialize)]
+struct Canister {
+    pub canister_id: Principal,
+    // pub name: String,
+    // pub description: String,
+}
+
+#[derive(Clone, CandidType, Deserialize)]
 pub struct State {
     info: DaoInfo,
     members: Vec<Member>,
     proposals: Vec<Proposal>,
+    canisters: Vec<Canister>,
 }
 
 impl Default for State {
@@ -101,6 +110,7 @@ impl Default for State {
             },
             members: vec![],
             proposals: vec![],
+            canisters: vec![],
         }
     }
 }
@@ -136,17 +146,37 @@ fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
     if !is_member(proposer) {
         return CreateProposalResponse::NoPermission;
     }
-    let proposal_id = STATE.with(|s| s.borrow().proposals.len().try_into().unwrap());
-    let proposal = Proposal {
-        proposal_id,
-        proposer,
-        proposal_date: time(),
-        proposal_type: proposal_type,
-        proposal_status: ProposalStatus::InProgress,
-        yes_votes: vec![proposer],
-        no_votes: vec![],
+    match proposal_type {
+        ProposalType::LinkCanister { canister_id } => {
+            if STATE.with(|s| {
+                s.borrow()
+                    .canisters
+                    .iter()
+                    .find(|c| c.canister_id == canister_id)
+                    .is_some()
+            }) {
+                return CreateProposalResponse::CanisterAlreadyAdded;
+            }
+        }
+        _ => {}
     };
-    STATE.with(|s| s.borrow_mut().proposals.push(proposal));
+
+    let proposal_id = STATE.with(|s| {
+        let state = &mut s.borrow_mut();
+
+        let next_id = state.proposals.len() as u64;
+        let proposal = Proposal {
+            proposal_id: next_id,
+            proposer,
+            proposal_date: time(),
+            proposal_type: proposal_type,
+            proposal_status: ProposalStatus::InProgress,
+            yes_votes: vec![proposer],
+            no_votes: vec![],
+        };
+        state.proposals.push(proposal);
+        next_id
+    });
     check_votes(proposal_id);
 
     return CreateProposalResponse::Success;
@@ -248,6 +278,14 @@ fn get_members() -> Vec<Member> {
 
 #[ic_cdk::export::candid::candid_method(query)]
 #[query]
+fn get_canisters() -> Vec<Canister> {
+    STATE.with(|s| {
+        return s.borrow().canisters.clone();
+    })
+}
+
+#[ic_cdk::export::candid::candid_method(query)]
+#[query]
 fn get_proposals() -> Vec<Proposal> {
     STATE.with(|s| {
         return s.borrow().proposals.clone();
@@ -306,6 +344,19 @@ fn execute(proposal: &Proposal) -> Result<(), ()> {
             return Ok(());
         }),
         ProposalType::CreateCanister => todo!(),
+        ProposalType::LinkCanister { canister_id } => STATE.with(|s| {
+            let canisters = &mut s.borrow_mut().canisters;
+
+            if canisters.iter().any(|c| &c.canister_id == canister_id) {
+                return Err(());
+            }
+
+            canisters.push(Canister {
+                canister_id: *canister_id,
+            });
+
+            Ok(())
+        }),
         ProposalType::InstallCanister => todo!(),
         ProposalType::DeleteCanister => todo!(),
         ProposalType::StartCanister => todo!(),
