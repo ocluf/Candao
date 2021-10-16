@@ -1,4 +1,4 @@
-name: Rust
+name: Test Build
 
 on:
   push:
@@ -17,6 +17,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install
         run: |
+          rustup target add wasm32-unknown-unknown
           echo y | DFX_VERSION=$DFX_VERSION bash -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
           wget https://github.com/chenyan2002/ic-repl/releases/download/$IC_REPL_VERSION/ic-repl-linux64
           cp ./ic-repl-linux64 /usr/local/bin/ic-repl
