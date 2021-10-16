@@ -1,0 +1,37 @@
+name: Rust
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DFX_VERSION: 0.8.1
+      IC_REPL_VERSION: 0.1.1
+      CI: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install
+        run: |
+          echo y | DFX_VERSION=$DFX_VERSION bash -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+          wget https://github.com/chenyan2002/ic-repl/releases/download/$IC_REPL_VERSION/ic-repl-linux64
+          cp ./ic-repl-linux64 /usr/local/bin/ic-repl
+          chmod a+x /usr/local/bin/ic-repl
+      - name: Build
+        run: |
+          dfx cache install
+          dfx start --background --no-artificial-delay
+          dfx canister --no-wallet create candao
+          dfx canister --no-wallet create candao_assets
+          dfx build
+      - name: Test
+        run: |
+          sh test.sh
+      - name: stop dfx
+        run: |
+          echo "dfx stop"
+          dfx stop
