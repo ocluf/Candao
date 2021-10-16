@@ -30,7 +30,7 @@ type Proposal = record {
 };
 
 service : {
-    "take_control": (text) -> (bool);
+    "take_control": () -> (bool);
     "get_members": () -> (vec Member) query;
     "get_proposals": () -> (vec Proposal) query;
 

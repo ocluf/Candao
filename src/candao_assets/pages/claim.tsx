@@ -49,7 +49,7 @@ const Claim: NextPage = () => {
         <Nav showMenu={false}></Nav>
 
         <main className="max-w-4xl mx-auto pt-4">
-          <ClaimSteps onClick={() => {}}></ClaimSteps>
+          <ClaimSteps onClick={() => { }}></ClaimSteps>
         </main>
       </div>
     );
