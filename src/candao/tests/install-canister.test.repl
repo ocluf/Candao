@@ -1,0 +1,99 @@
+identity alice;
+
+let id = call ic.provisional_create_canister_with_cycles(record { settings = null; amount = null });
+let candao = id.canister_id;
+candao;
+let _ = call ic.install_code(
+  record {
+    arg = encode ();
+    wasm_module = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+    mode = variant { install };
+    canister_id = candao;
+  },
+);
+
+let _ = call candao.take_control();
+assert _ == variant { Success };
+
+
+// create a canister that CanDAO can control
+
+let settings = opt record {
+  controllers = opt vec { candao };
+  compute_allocation = null ;
+  memory_allocation = null ;
+  freezing_threshold = null ;
+};
+
+let canister_to_link = call ic.provisional_create_canister_with_cycles(record { settings = settings; amount = null });
+
+
+// create proposal to link the canister
+
+let _ = call candao.create_proposal(variant {
+  LinkCanister = record {
+    canister_id = canister_to_link.canister_id;
+  }
+});
+assert _ == variant { Success };
+
+
+// create proposal to install a test binary
+
+let _ = call candao.create_proposal(variant {
+  InstallCanister = record {
+    canister_id = canister_to_link.canister_id;
+    mode = variant { install };
+    wasm = file "./wasm/greet.wasm";
+  }
+});
+assert _ == variant { Success };
+
+
+
+// test that the new canister has the greet actor
+
+let other_canister = canister_to_link.canister_id;
+
+let _ = call other_canister.greet("test");
+assert _ == "Hello, test!";
+
+
+// create proposal to reinstall CanDAO in the controlled canister
+
+let _ = call candao.create_proposal(variant {
+  InstallCanister = record {
+    canister_id = other_canister;
+    mode = variant { reinstall };
+    wasm = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+  }
+});
+assert _ == variant { Success };
+
+// test take_control on the new canister
+
+let _ = call other_canister.take_control();
+assert _ == variant { Success };
+
+
+
+// upgrade the canister and see if state preserved
+
+let _ = call candao.create_proposal(variant {
+  InstallCanister = record {
+    canister_id = other_canister;
+    mode = variant { upgrade };
+    wasm = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+  }
+});
+assert _ == variant { Success };
+
+let _ = call other_canister.get_members();
+
+assert _ == vec {
+  record {
+    name = "";
+    description = "";
+    principal_id = alice;
+  }
+};
