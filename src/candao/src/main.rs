@@ -1,9 +1,10 @@
 use ic_cdk::api::{caller, time};
+use ic_cdk::call;
 use ic_cdk::export::candid::{CandidType, Deserialize};
 use ic_cdk::export::Principal;
 use ic_cdk_macros::{query, update};
+use serde_bytes::ByteBuf;
 use std::cell::RefCell;
-
 mod lifecycle;
 
 #[derive(Clone, CandidType, Deserialize)]
@@ -13,13 +14,38 @@ struct Member {
     pub description: String,
 }
 
+#[derive(CandidType, Deserialize, Clone)]
+enum InstallMode {
+    #[serde(rename = "install")]
+    Install,
+    #[serde(rename = "reinstall")]
+    Reinstall,
+    #[serde(rename = "upgrade")]
+    Upgrade,
+}
+
+#[derive(CandidType, Deserialize, Clone)]
+struct CanisterInstall<'a> {
+    mode: InstallMode,
+    canister_id: Principal,
+    #[serde(with = "serde_bytes")]
+    wasm_module: &'a [u8],
+    arg: Vec<u8>,
+}
+
 #[derive(Clone, CandidType, Deserialize)]
 enum ProposalType {
     AddMember(Member),
     RemoveMember(Principal),
     CreateCanister,
-    LinkCanister { canister_id: Principal },
-    InstallCanister,
+    LinkCanister {
+        canister_id: Principal,
+    },
+    InstallCanister {
+        canister_id: Principal,
+        mode: InstallMode,
+        wasm: ByteBuf,
+    },
     DeleteCanister,
     StartCanister,
     StopCanister,
@@ -141,7 +167,7 @@ fn take_control() -> TakeControlResponse {
 
 #[ic_cdk::export::candid::candid_method]
 #[update]
-fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
+async fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
     let proposer = caller();
     if !is_member(proposer) {
         return CreateProposalResponse::NoPermission;
@@ -177,14 +203,14 @@ fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
         state.proposals.push(proposal);
         next_id
     });
-    check_votes(proposal_id);
+    check_votes(proposal_id).await;
 
     return CreateProposalResponse::Success;
 }
 
 #[ic_cdk::export::candid::candid_method]
 #[update]
-fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
+async fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
     let voter = caller();
 
     let member = find_member(voter);
@@ -235,7 +261,7 @@ fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
             }
         }
     });
-    check_votes(proposal_id);
+    check_votes(proposal_id).await;
     return VoteResponse::VoteCast;
 }
 
@@ -300,7 +326,7 @@ fn get_dao_info() -> DaoInfo {
     })
 }
 
-fn check_votes(proposal_id: u64) {
+async fn check_votes(proposal_id: u64) {
     let proposal = find_proposal(proposal_id);
     if proposal.is_none() {
         return;
@@ -317,7 +343,7 @@ fn check_votes(proposal_id: u64) {
     let nr_of_yes = proposal.yes_votes.len();
     let nr_of_no = proposal.no_votes.len();
     if nr_of_yes > nr_of_no && nr_of_yes >= majority {
-        let result = execute(&proposal);
+        let result = execute(&proposal).await;
         match result {
             Ok(_) => set_proposal_status(proposal_id, ProposalStatus::Executed),
             Err(_) => set_proposal_status(proposal_id, ProposalStatus::Failed),
@@ -331,7 +357,7 @@ fn check_votes(proposal_id: u64) {
     }
 }
 
-fn execute(proposal: &Proposal) -> Result<(), ()> {
+async fn execute(proposal: &Proposal) -> Result<(), ()> {
     match &proposal.proposal_type {
         ProposalType::AddMember(member) => {
             STATE.with(|s| s.borrow_mut().members.push(member.clone()));
@@ -357,7 +383,40 @@ fn execute(proposal: &Proposal) -> Result<(), ()> {
 
             Ok(())
         }),
-        ProposalType::InstallCanister => todo!(),
+        ProposalType::InstallCanister {
+            canister_id,
+            mode,
+            wasm,
+        } => {
+            #[derive(CandidType)]
+            struct CanisterInstallArgs {
+                mode: InstallMode,
+                canister_id: Principal,
+                wasm_module: Vec<u8>,
+                arg: Vec<u8>,
+                compute_allocation: Option<u64>,
+                memory_allocation: Option<u64>,
+            }
+
+            // Principal::management_canister()
+            let install_result: ic_cdk::api::call::CallResult<()> = call(
+                Principal::management_canister(),
+                "install_code",
+                (CanisterInstallArgs {
+                    arg: vec![],
+                    canister_id: *canister_id,
+                    wasm_module: wasm.to_vec(),
+                    compute_allocation: None,
+                    memory_allocation: None,
+                    mode: mode.to_owned(),
+                },),
+            )
+            .await;
+
+            // ic_cdk::println!("install_result: {:#?}", install_result);
+
+            Ok(())
+        }
         ProposalType::DeleteCanister => todo!(),
         ProposalType::StartCanister => todo!(),
         ProposalType::StopCanister => todo!(),

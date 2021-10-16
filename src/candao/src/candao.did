@@ -15,7 +15,13 @@ type ProposalType = variant {
     LinkCanister: record {
         canister_id: principal;
     };
-    InstallCanister;
+    InstallCanister: record {
+        canister_id: principal;
+        mode: variant {
+            install; reinstall; upgrade;
+        };
+        wasm: blob;
+    };
     DeleteCanister;
     StartCanister;
     StopCanister;
