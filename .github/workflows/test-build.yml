@@ -22,14 +22,20 @@ jobs:
           wget https://github.com/chenyan2002/ic-repl/releases/download/$IC_REPL_VERSION/ic-repl-linux64
           cp ./ic-repl-linux64 /usr/local/bin/ic-repl
           chmod a+x /usr/local/bin/ic-repl
+      - name: Cargo Test 
+        run: |
+          cargo test
       - name: Build
         run: |
           dfx cache install
           dfx start --background --no-artificial-delay
           dfx canister --no-wallet create candao
           dfx canister --no-wallet create candao_assets
+          cd src/candao_assets
+          npm install
+          cd ../..
           dfx build
-      - name: Test
+      - name: API Test 
         run: |
           sh test.sh
       - name: stop dfx
