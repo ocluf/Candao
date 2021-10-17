@@ -8,17 +8,19 @@ import { useDaoInfo } from "../hooks/useDaoInfo";
 import { LoginState, useAuth } from "./AuthProvider";
 
 type Tab = "Dashboard" | "Members" | "Canisters" | "Proposals";
-type NavInfo = { name: Tab, href: string, route: string }
-
+type NavInfo = { name: Tab; href: string };
 
 const navigation: Array<NavInfo> = [
-  { name: "Dashboard", href: "#", route: "/dao" },
-  { name: "Members", href: "#", route: "/members" },
-  { name: "Canisters", href: "#", route: "/canisters" },
-  { name: "Proposals", href: "#", route: "/proposals" },
+  { name: "Dashboard", href: "/dao" },
+  { name: "Members", href: "/members" },
+  { name: "Canisters", href: "/canisters" },
+  { name: "Proposals", href: "/proposals" },
 ];
 
-export const Nav: React.FC<{ current?: Tab, showMenu?: boolean }> = ({ current, showMenu = true }) => {
+export const Nav: React.FC<{ current?: Tab; showMenu?: boolean }> = ({
+  current,
+  showMenu = true,
+}) => {
   const { authState, logout, login } = useAuth();
   const { daoInfo, daoInfoError, daoInfoLoading } = useDaoInfo();
   const router = useRouter();
@@ -30,7 +32,7 @@ export const Nav: React.FC<{ current?: Tab, showMenu?: boolean }> = ({ current, 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center">
-                <Link passHref href="/">
+                <Link href="/">
                   <a className="flex-shrink-0 flex items-center">
                     <img className="h-8 w-8" src="/images/logo.svg" alt="" />
                     <span className="pl-2 text-white font-semibold">
@@ -42,20 +44,19 @@ export const Nav: React.FC<{ current?: Tab, showMenu?: boolean }> = ({ current, 
                   <div className="hidden md:block">
                     <div className="ml-10 flex items-baseline space-x-4">
                       {navigation.map((item) => (
-                        <a
-                          key={item.name}
-                          href={item.href}
-                          onClick={() => router.push(item.route)}
-                          className={classNames(
-                            current == item.name
-                              ? "bg-gray-900 text-white"
-                              : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                            "px-3 py-2 rounded-md text-sm font-medium"
-                          )}
-                          aria-current={current ? "page" : undefined}
-                        >
-                          {item.name}
-                        </a>
+                        <Link href={item.href} key={item.name}>
+                          <a
+                            className={classNames(
+                              current == item.name
+                                ? "bg-gray-900 text-white"
+                                : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                              "px-3 py-2 rounded-md text-sm font-medium"
+                            )}
+                            aria-current={current ? "page" : undefined}
+                          >
+                            {item.name}
+                          </a>
+                        </Link>
                       ))}
                     </div>
                   </div>
@@ -90,19 +91,19 @@ export const Nav: React.FC<{ current?: Tab, showMenu?: boolean }> = ({ current, 
           <Disclosure.Panel className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               {navigation.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className={classNames(
-                    current == item.name
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-300 hover:bg-gray-700 hover:text-white",
-                    "block px-3 py-2 rounded-md text-base font-medium"
-                  )}
-                  aria-current={current ? "page" : undefined}
-                >
-                  {item.name}
-                </a>
+                <Link key={item.name} href={item.href}>
+                  <a
+                    className={classNames(
+                      current == item.name
+                        ? "bg-gray-900 text-white"
+                        : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                      "block px-3 py-2 rounded-md text-base font-medium"
+                    )}
+                    aria-current={current ? "page" : undefined}
+                  >
+                    {item.name}
+                  </a>
+                </Link>
               ))}
               <button
                 className={

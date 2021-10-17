@@ -1,7 +1,7 @@
-import { Actor } from '@dfinity/agent';
 import { UsersIcon, ServerIcon, CursorClickIcon } from '@heroicons/react/outline'
 import { useRouter } from 'next/dist/client/router';
 import { useDaoMembers } from '../hooks/useDaoMembers';
+import Link from 'next/link'
 
 type ActivityCard = { name: string, subtitle: string, route: string, icon: any };
 
@@ -35,10 +35,9 @@ export default function Activities() {
             < ul role="list" className="  grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 " >
                 {
                     Activities.map((activity) => (
-                        <li key={activity.name}
-                            className="col-span-1 bg-white rounded-md shadow cursor-pointer"
-                            onClick={() => route.push(activity.route)}
+                        <li key={activity.name} className="col-span-1 bg-white rounded-md shadow"
                         >
+                            <Link href={activity.route}><a className="cursor-pointer">
                             <div className="flex p-6">
                                 <div className="bg-purple-600 h-11 w-12 mx-auto my-auto rounded-lg">{activity.icon}</div>
                                 <div className="w-full pl-4 flex items-center justify-between space-x-6">
@@ -54,6 +53,7 @@ export default function Activities() {
                             <div className="bg-gray-50 p-4 text-sm font-medium leading-5 text-purple-600 ">
                                 View all
                             </div>
+                            </a></Link>
                         </li>
                     ))
                 }
