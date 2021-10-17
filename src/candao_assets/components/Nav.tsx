@@ -1,35 +1,27 @@
 import { Disclosure } from "@headlessui/react";
 import classNames from "classnames";
+import { useRouter } from "next/dist/client/router";
 import Link from "next/link";
 import React from "react";
 import { FiMenu, FiX } from "react-icons/fi";
 import { useDaoInfo } from "../hooks/useDaoInfo";
 import { LoginState, useAuth } from "./AuthProvider";
 
-const user = {
-  name: "Tom Cook",
-  email: "tom@example.com",
-  imageUrl:
-    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-};
+type Tab = "Dashboard" | "Members" | "Canisters" | "Proposals";
+type NavInfo = { name: Tab, href: string, route: string }
 
-const userNavigation = [
-  // { name: "Your Profile", href: "#" },
-  // { name: "Settings", href: "#" },
-  { name: "Sign out", href: "#" },
+
+const navigation: Array<NavInfo> = [
+  { name: "Dashboard", href: "#", route: "/dao" },
+  { name: "Members", href: "#", route: "/members" },
+  { name: "Canisters", href: "#", route: "/canisters" },
+  { name: "Proposals", href: "#", route: "/proposals" },
 ];
 
-const navigation = [
-  { name: "Dashboard", href: "#", current: true },
-  { name: "Members", href: "#", current: false },
-  { name: "Canisters", href: "#", current: false },
-  { name: "Proposals", href: "#", current: false },
-];
-
-export const Nav: React.FC<{ showMenu?: boolean }> = ({ showMenu = true }) => {
+export const Nav: React.FC<{ current?: Tab, showMenu?: boolean }> = ({ current, showMenu = true }) => {
   const { authState, logout, login } = useAuth();
-
   const { daoInfo, daoInfoError, daoInfoLoading } = useDaoInfo();
+  const router = useRouter();
 
   return (
     <Disclosure as="nav" className="bg-gray-800">
@@ -53,13 +45,14 @@ export const Nav: React.FC<{ showMenu?: boolean }> = ({ showMenu = true }) => {
                         <a
                           key={item.name}
                           href={item.href}
+                          onClick={() => router.push(item.route)}
                           className={classNames(
-                            item.current
+                            current == item.name
                               ? "bg-gray-900 text-white"
                               : "text-gray-300 hover:bg-gray-700 hover:text-white",
                             "px-3 py-2 rounded-md text-sm font-medium"
                           )}
-                          aria-current={item.current ? "page" : undefined}
+                          aria-current={current ? "page" : undefined}
                         >
                           {item.name}
                         </a>
@@ -101,12 +94,12 @@ export const Nav: React.FC<{ showMenu?: boolean }> = ({ showMenu = true }) => {
                   key={item.name}
                   href={item.href}
                   className={classNames(
-                    item.current
+                    current == item.name
                       ? "bg-gray-900 text-white"
                       : "text-gray-300 hover:bg-gray-700 hover:text-white",
                     "block px-3 py-2 rounded-md text-base font-medium"
                   )}
-                  aria-current={item.current ? "page" : undefined}
+                  aria-current={current ? "page" : undefined}
                 >
                   {item.name}
                 </a>
