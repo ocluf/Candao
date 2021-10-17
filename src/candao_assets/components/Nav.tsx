@@ -8,8 +8,7 @@ import { useDaoInfo } from "../hooks/useDaoInfo";
 import { LoginState, useAuth } from "./AuthProvider";
 
 type Tab = "Dashboard" | "Members" | "Canisters" | "Proposals";
-type NavInfo = { name: Tab, href: string, route: string }
-
+type NavInfo = { name: Tab; href: string; route: string };
 
 const navigation: Array<NavInfo> = [
   { name: "Dashboard", href: "#", route: "/dao" },
@@ -18,7 +17,10 @@ const navigation: Array<NavInfo> = [
   { name: "Proposals", href: "#", route: "/proposals" },
 ];
 
-export const Nav: React.FC<{ current?: Tab, showMenu?: boolean }> = ({ current, showMenu = true }) => {
+export const Nav: React.FC<{ current?: Tab; showMenu?: boolean }> = ({
+  current,
+  showMenu = true,
+}) => {
   const { authState, logout, login } = useAuth();
   const { daoInfo, daoInfoError, daoInfoLoading } = useDaoInfo();
   const router = useRouter();
