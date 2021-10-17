@@ -16,7 +16,7 @@ const BreadCrumbs = (props: { crumbs: Array<String> }) => {
                     if (index > 0) {
                         classes += " ml-4"
                     }
-                    return <li>
+                    return <li key={index}>
                         <div className="flex">
                             {index > 0 ? <ChevronRightIcon className="flex-shrink-0 h-5 w-5 text-gray-400" aria-hidden="true" /> : null}
                             <a href="#" className={classes}>
