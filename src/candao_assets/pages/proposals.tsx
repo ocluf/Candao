@@ -1,16 +1,103 @@
+import { Principal } from "@dfinity/principal";
 import type { NextPage } from "next";
+import { useAuth } from "../components/AuthProvider";
 import { Nav } from "../components/Nav";
 import PageHeading from "../components/PageHeading";
+import { Canister, Member, Proposal } from "../declarations/candao/candao.did";
 import { useCanisters } from "../hooks/useCanisters";
 import { useDaoMembers } from "../hooks/useDaoMembers";
 import { useProposals } from "../hooks/useProposals";
-import { resolveMemberPrincipalId } from "../utils/members";
-import { getProposalSummary, getProposalTypeName } from "../utils/proposals";
+import { enumIs } from "../utils/enums";
+import { resolveMemberPrincipalId, shortenPrincipalId } from "../utils/members";
+import {
+  getProposalStatusName,
+  getProposalSummary,
+  getProposalTypeName,
+  getUserVote,
+  proposalStatusNameMap,
+  UserVote,
+} from "../utils/proposals";
+import { unreachable } from "../utils/unreachable";
+
+const ProposalSummary: React.FC<{
+  proposal: Proposal;
+  members: Member[];
+  canisters: Canister[];
+}> = ({ members, proposal, canisters }) => {
+  const proposalType = proposal.proposal_type;
+  if (enumIs(proposalType, "AddMember")) {
+    return (
+      <>
+        Add <strong>{proposalType.AddMember.name}</strong> as{" "}
+        <span title={proposalType.AddMember.principal_id.toString()}>
+          {shortenPrincipalId(proposalType.AddMember.principal_id.toString())}
+        </span>
+      </>
+    );
+  } else if (enumIs(proposalType, "CreateCanister")) {
+    return <>Create and link a new canister</>;
+  } else if (enumIs(proposalType, "DeleteCanister")) {
+    // return <>Delete {proposal.DeleteCanister.canister_id}</>
+    return <>Delete a canister</>;
+  } else if (enumIs(proposalType, "InstallCanister")) {
+    return (
+      <>
+        {proposalType.InstallCanister.mode} canister{" "}
+        {proposalType.InstallCanister.canister_id}
+      </>
+    );
+  } else if (enumIs(proposalType, "LinkCanister")) {
+    return <>Link canister {proposalType.LinkCanister.canister_id}</>;
+  } else if (enumIs(proposalType, "RemoveMember")) {
+    return (
+      <>Remove {resolveMemberPrincipalId(members, proposalType.RemoveMember)}</>
+    );
+  } else if (enumIs(proposalType, "StartCanister")) {
+    return <>Start Canister X</>;
+  } else if (enumIs(proposalType, "StopCanister")) {
+    return <>Stop Canister X</>;
+  } else if (enumIs(proposalType, "UpdateCanisterSettings")) {
+    return <>Update Canister X Settings</>;
+  }
+
+  unreachable(proposalType);
+};
+
+const VoteInfo: React.FC<{
+  proposal: Proposal;
+  userPrincipal: Principal;
+}> = ({ proposal, userPrincipal }) => {
+  const vote = getUserVote(proposal, userPrincipal);
+
+  switch (vote) {
+    case UserVote.No:
+      return <div>Voted NO</div>;
+    case UserVote.Yes:
+      return <div>Voted YES</div>;
+    case UserVote.NotVoted:
+      if (enumIs(proposal.proposal_status, "InProgress")) {
+        return (
+          <div>
+            <button>Vote YES</button>
+            <button>Vote NO</button>
+          </div>
+        );
+      } else {
+        return <div>Not voted</div>;
+      }
+
+    // break
+    default:
+      unreachable(vote);
+  }
+};
 
 const Proposals: NextPage = () => {
   const { proposals, proposalsLoading } = useProposals();
   const { daoMembers, daoMembersLoading } = useDaoMembers();
   const { canisters, canistersLoading } = useCanisters();
+
+  const { authClient } = useAuth();
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -75,7 +162,11 @@ const Proposals: NextPage = () => {
                         {getProposalTypeName(proposal.proposal_type)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {getProposalSummary(proposal, daoMembers, canisters)}
+                        <ProposalSummary
+                          proposal={proposal}
+                          members={daoMembers}
+                          canisters={canisters}
+                        ></ProposalSummary>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {resolveMemberPrincipalId(
@@ -84,13 +175,17 @@ const Proposals: NextPage = () => {
                         )}
                       </td>
 
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a
-                          href="#"
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          Edit
-                        </a>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {getProposalStatusName(proposal.proposal_status)}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <VoteInfo
+                          proposal={proposal}
+                          userPrincipal={
+                            authClient?.getIdentity().getPrincipal()!
+                          }
+                        ></VoteInfo>
                       </td>
                     </tr>
                   ))}
