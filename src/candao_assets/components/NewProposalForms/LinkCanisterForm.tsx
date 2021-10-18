@@ -37,8 +37,8 @@ export const LinkCanisterForm: React.FC<{
           <FiInfo className="text-blue-600 mr-2 text-xl"></FiInfo>
 
           <span className="text-gray-700">
-            Tip: don't forget to make this DAO ({process.env.CANDAO_CANISTER_ID}
-            ) as the only controller.
+            Tip: don&apos;t forget to make this DAO (
+            {process.env.CANDAO_CANISTER_ID}) as the only controller.
           </span>
         </div>
         <button
