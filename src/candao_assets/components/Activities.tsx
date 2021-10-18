@@ -16,7 +16,6 @@ type ActivityCard = {
 };
 
 export default function Activities() {
-  const route = useRouter();
   const { daoMembers, daoMembersError, daoMembersLoading } = useDaoMembers();
   const nrOfMembers = () => {
     if (daoMembersLoading) {
@@ -61,7 +60,7 @@ export default function Activities() {
     },
   ];
   return (
-    <main className="px-5">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <h1 className="py-5 text-lg text-grey-900 font-medium leading-6">
         Activities
       </h1>
