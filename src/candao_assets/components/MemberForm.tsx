@@ -1,9 +1,7 @@
-import { Actor } from "@dfinity/agent";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Member } from "../declarations/candao/candao.did";
 import { useActor } from "./ActorProvider";
-import RemoveMemberModal from "./RemoveMemberModal";
 
 type Fields = {
   name: string;

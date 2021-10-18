@@ -1,11 +1,14 @@
+import { Principal } from "@dfinity/principal";
 import {
   Canister,
   Member,
   Proposal,
+  ProposalStatus,
   ProposalType,
 } from "../declarations/candao/candao.did";
+import Proposals from "../pages/proposals";
 import { enumIs, KeysOfUnion } from "./enums";
-import { resolveMemberPrincipalId } from "./members";
+import { resolveMemberPrincipalId, shortenPrincipalId } from "./members";
 import { unreachable } from "./unreachable";
 
 export const proposalNameMap: Record<KeysOfUnion<ProposalType>, string> = {
@@ -51,7 +54,9 @@ export function getProposalSummary(
 ): string {
   const proposalType = proposal.proposal_type;
   if (enumIs(proposalType, "AddMember")) {
-    return `Add ${proposalType.AddMember.name} as ${proposalType.AddMember.principal_id}`;
+    return `Add ${proposalType.AddMember.name} as ${shortenPrincipalId(
+      proposalType.AddMember.principal_id.toString()
+    )}`;
   } else if (enumIs(proposalType, "CreateCanister")) {
     return `Create and link a new canister`;
   } else if (enumIs(proposalType, "DeleteCanister")) {
@@ -75,4 +80,55 @@ export function getProposalSummary(
   }
 
   unreachable(proposalType);
+}
+
+export const proposalStatusNameMap: Record<
+  KeysOfUnion<ProposalStatus>,
+  string
+> = {
+  Executed: "Executed",
+  Failed: "Failed",
+  Rejected: "Rejected",
+  InProgress: "Voting",
+};
+
+export function getProposalStatusName(status: ProposalStatus): string {
+  if (enumIs(status, "Executed")) {
+    return "Executed";
+  }
+  if (enumIs(status, "Failed")) {
+    return "Failed";
+  }
+  if (enumIs(status, "Rejected")) {
+    return "Rejected";
+  }
+  if (enumIs(status, "InProgress")) {
+    return "Voting";
+  }
+  unreachable(status);
+}
+
+export enum UserVote {
+  NotVoted,
+  Yes,
+  No,
+}
+
+export function getUserVote(
+  proposal: Proposal,
+  userPrincipal: Principal
+): UserVote {
+  if (
+    proposal.yes_votes.find(
+      (principal) => principal.toString() === userPrincipal.toString()
+    )
+  )
+    return UserVote.Yes;
+  if (
+    proposal.no_votes.find(
+      (principal) => principal.toString() === userPrincipal.toString()
+    )
+  )
+    return UserVote.No;
+  return UserVote.NotVoted;
 }

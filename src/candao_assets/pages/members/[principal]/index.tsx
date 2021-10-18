@@ -13,7 +13,7 @@ const Members: NextPage = () => {
   const urlPrincipal = router.query.principal;
   const { daoMembers, daoMembersError, daoMembersLoading } = useDaoMembers();
   const [open, setOpen] = useState(false);
-  console.log("open in memberPage: " + open);
+
   const member: Member | undefined = daoMembers?.find(
     (members) => members.principal_id.toString() == urlPrincipal
   );
