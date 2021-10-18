@@ -127,7 +127,11 @@ const Home: NextPage = () => {
               <button
                 type="button"
                 className="mt-8 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                onClick={() => login(claimDao)}
+                onClick={() => {
+                  if (!claimingDao) {
+                    claimDao();
+                  }
+                }}
               >
                 Login to claim this DAO
               </button>
