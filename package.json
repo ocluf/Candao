@@ -9,6 +9,7 @@
     "Canister"
   ],
   "scripts": {
+    "dev": "cd src/candao_assets && yarn dev",
     "build": "cd src/candao_assets && npm run build",
     "prebuild": "npm run copy:types",
     "start": "npm run copy:types && cd src/candao_assets && yarn dev",

@@ -1,0 +1,42 @@
+identity alice;
+
+let id = call ic.provisional_create_canister_with_cycles(record { settings = null; amount = null });
+let candao = id.canister_id;
+candao;
+let _ = call ic.install_code(
+  record {
+    arg = encode ();
+    wasm_module = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+    mode = variant { install };
+    canister_id = candao;
+  },
+);
+
+let _ = call candao.take_control();
+
+let canister_to_link = call ic.provisional_create_canister_with_cycles(record { settings = null; amount = null });
+
+let _ = call candao.create_proposal(variant {
+  LinkCanister = record {
+    canister_id = canister_to_link.canister_id;
+  }
+});
+assert _ == variant { Success };
+
+// single member, no additional voting necessary
+
+let _ = call candao.get_canisters();
+assert _ == vec {
+  record {
+    canister_id = canister_to_link.canister_id;
+  };
+};
+
+// can't add canister a 2nd time
+
+let _ = call candao.create_proposal(variant {
+  LinkCanister = record {
+    canister_id = canister_to_link.canister_id;
+  }
+});
+assert _ == variant { CanisterAlreadyAdded };
