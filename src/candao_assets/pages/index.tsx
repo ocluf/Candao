@@ -209,6 +209,10 @@ const Home: NextPage = () => {
                 >
                   Log out
                 </button>
+                <p>
+                  your principal id:{" "}
+                  {authClient?.getIdentity().getPrincipal().toString()}
+                </p>
               </>
             )}
           </>
