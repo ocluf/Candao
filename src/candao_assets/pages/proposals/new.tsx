@@ -5,6 +5,8 @@ import { useState } from "react";
 import { useActor } from "../../components/ActorProvider";
 import { Nav } from "../../components/Nav";
 import { AddMemberForm } from "../../components/NewProposalForms/AddMemberForm";
+import { LinkCanisterForm } from "../../components/NewProposalForms/LinkCanisterForm";
+import { RemoveMemberForm } from "../../components/NewProposalForms/RemoveMemberForm";
 import PageHeading from "../../components/PageHeading";
 import { ProposalType } from "../../declarations/candao/candao.did";
 import { enumIs, KeysOfUnion } from "../../utils/enums";
@@ -36,10 +38,10 @@ const Proposals: NextPage = () => {
         pageTitle="New Proposal"
       ></PageHeading>
 
-      <main className="p-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-          <div className="md:grid md:grid-cols-3 md:gap-6">
-            <div className="md:col-span-1">
+          <div className="max-w-3xl">
+            <div className="">
               <label
                 className="text-lg font-medium leading-6 text-gray-900"
                 htmlFor="proposal-type"
@@ -63,7 +65,7 @@ const Proposals: NextPage = () => {
                 ))}
               </select>
             </div>
-            <div className="mt-5 md:mt-0 md:col-span-2">
+            <div className="mt-5 ">
               {proposalType === "AddMember" && (
                 <AddMemberForm
                   onSubmit={async (form) => {
@@ -82,6 +84,38 @@ const Proposals: NextPage = () => {
                   }}
                   submitting={creating}
                 ></AddMemberForm>
+              )}
+              {proposalType === "RemoveMember" && (
+                <RemoveMemberForm
+                  onSubmit={async (form) => {
+                    setCreating(true);
+                    const response = await actor.create_proposal({
+                      RemoveMember: Principal.fromText(form.principal),
+                    });
+                    setCreating(false);
+                    if (enumIs(response, "Success")) {
+                      router.push("/proposals");
+                    }
+                  }}
+                  submitting={creating}
+                ></RemoveMemberForm>
+              )}
+              {proposalType === "LinkCanister" && (
+                <LinkCanisterForm
+                  onSubmit={async (form) => {
+                    setCreating(true);
+                    const response = await actor.create_proposal({
+                      LinkCanister: {
+                        canister_id: Principal.fromText(form.canister_id),
+                      },
+                    });
+                    setCreating(false);
+                    if (enumIs(response, "Success")) {
+                      router.push("/proposals");
+                    }
+                  }}
+                  submitting={creating}
+                ></LinkCanisterForm>
               )}
             </div>
           </div>
