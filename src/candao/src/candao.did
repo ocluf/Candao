@@ -53,9 +53,10 @@ type ProposalType = variant {
     StartCanister: CanisterId;
     StopCanister: CanisterId;
     UpdateCanisterSettings: record {
-    canister_id : principal;
-    settings : canister_settings;
-  };
+        canister_id : principal;
+        settings : canister_settings;
+    };
+    DepositCycles: CanisterId;
 };
 
 

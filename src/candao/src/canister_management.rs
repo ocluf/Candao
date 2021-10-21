@@ -1,5 +1,5 @@
 use candid::Principal;
-use ic_cdk::api::call::CallResult;
+use ic_cdk::api::call::{call_with_payment, CallResult};
 use ic_cdk::call;
 use ic_cdk::export::candid::{CandidType, Deserialize};
 
@@ -114,4 +114,15 @@ pub async fn delete_canister(args: CanisterId) -> CallResult<((),)> {
     let delete_result: CallResult<((),)> =
         call(Principal::management_canister(), "delete_canister", (args,)).await;
     return delete_result;
+}
+
+pub async fn deposit_cycles(canister_id: CanisterId, cycles: u64) -> CallResult<((),)> {
+    let deposit_result: CallResult<((),)> = call_with_payment(
+        Principal::management_canister(),
+        "deposit_cycles",
+        (canister_id,),
+        cycles,
+    )
+    .await;
+    return deposit_result;
 }

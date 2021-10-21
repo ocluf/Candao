@@ -21,6 +21,8 @@ export const proposalNameMap: Record<KeysOfUnion<ProposalType>, string> = {
   StartCanister: "Start Canister",
   StopCanister: "Stop Canister",
   UpdateCanisterSettings: "Update Canister Settings",
+  DepositCycles: "Deposit Cycles",
+  UninstallCanister: "Uninstall Canister"
 };
 
 export function getProposalTypeName(proposal: ProposalType): string {
@@ -42,6 +44,10 @@ export function getProposalTypeName(proposal: ProposalType): string {
     return "Stop Canister";
   } else if (enumIs(proposal, "UpdateCanisterSettings")) {
     return "Update Canister Settings";
+  } else if (enumIs(proposal, "DepositCycles")){
+    return "Deposit Cycles";
+  } else if (enumIs(proposal, "UninstallCanister")){
+    return "Uninstall Canister"
   }
 
   unreachable(proposal);
@@ -77,6 +83,10 @@ export function getProposalSummary(
     return `Stop Canister X`;
   } else if (enumIs(proposalType, "UpdateCanisterSettings")) {
     return `Update Canister X Settings`;
+  } else if (enumIs(proposalType, "DepositCycles")){
+    return "Deposit cycles to canister X from DAO Canister";
+  } else if (enumIs(proposalType, "UninstallCanister")){
+    return "Remove code from a canister";
   }
 
   unreachable(proposalType);

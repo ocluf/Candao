@@ -1,7 +1,7 @@
 use canister_management::{
-    canister_status, create_canister, delete_canister, install_code, start_canister, stop_canister,
-    uninstall_code, update_settings, CanisterId, CanisterInstallArgs, CanisterStatus,
-    CreateCanisterArgs, UpdateSettingsArg,
+    canister_status, create_canister, delete_canister, deposit_cycles, install_code,
+    start_canister, stop_canister, uninstall_code, update_settings, CanisterId,
+    CanisterInstallArgs, CanisterStatus, CreateCanisterArgs, UpdateSettingsArg,
 };
 use ic_cdk::api::call::CallResult;
 use ic_cdk::api::{caller, time};
@@ -37,6 +37,7 @@ enum ProposalType {
     StartCanister(CanisterId),
     StopCanister(CanisterId),
     UpdateCanisterSettings(UpdateSettingsArg),
+    DepositCycles(CanisterId),
 }
 
 #[derive(Clone, CandidType, Deserialize)]
@@ -407,7 +408,10 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
             let result: CallResult<((),)> = install_code(install_args.clone()).await;
             match result {
                 Ok(_) => Ok(()),
-                Err((_, error)) => Err(error),
+                Err((_, error)) => {
+                    ic_cdk::print(error.clone());
+                    Err(error)
+                }
             }
         }
         ProposalType::UninstallCanister(canister_id) => {
@@ -446,6 +450,13 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
         ProposalType::UpdateCanisterSettings(args) => {
             let update_result = update_settings(args.clone()).await;
             match update_result {
+                Ok(_) => Ok(()),
+                Err((_, error)) => Err(error),
+            }
+        }
+        ProposalType::DepositCycles(canister_id) => {
+            let result = deposit_cycles(canister_id.clone(), 1000000000).await;
+            match result {
                 Ok(_) => Ok(()),
                 Err((_, error)) => Err(error),
             }
