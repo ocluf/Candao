@@ -10,6 +10,10 @@ type Canister = record {
     description: text;
 };
 
+type CanisterId = record {
+    canister_id : principal;
+};
+
 type canister_settings = record {
   controllers : opt vec principal;
   compute_allocation : opt nat;
@@ -44,9 +48,10 @@ type ProposalType = variant {
         wasm: blob;
         arg: blob;
     };
-    DeleteCanister: record {canister_id : principal};
-    StartCanister: record {canister_id : principal};
-    StopCanister: record {canister_id : principal};
+    UninstallCanister: CanisterId; 
+    DeleteCanister: CanisterId;
+    StartCanister: CanisterId;
+    StopCanister: CanisterId;
     UpdateCanisterSettings: record {
     canister_id : principal;
     settings : canister_settings;
@@ -104,7 +109,15 @@ type VoteResponse = variant {
     AlreadyVoted;
     InvalidProposalId;
     AlreadyDecided;
-}
+};
+
+type CanisterStatus = record {
+    status : variant { running; stopping; stopped };
+    settings: definite_canister_settings;
+    module_hash: opt blob;
+    memory_size: nat;
+    cycles: nat;
+};
 
 service : {
     "take_control": () -> (TakeControlResponse); 
@@ -114,6 +127,7 @@ service : {
     "vote": (nat64, Vote) -> (VoteResponse);
     "get_members": () -> (vec Member) query;
     "get_canisters": () -> (vec Canister) query;
+    "get_canister_status": (principal) -> (opt CanisterStatus);
     "get_proposals": () -> (vec Proposal) query;
     "get_dao_info": () -> (DaoInfo) query;
     "test": () -> (text);
