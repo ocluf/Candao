@@ -2,10 +2,11 @@ import { useForm } from "react-hook-form";
 import { FiInfo } from "react-icons/fi";
 
 type Fields = {
-  canister_id: string;
+  name: string;
+  description: string;
 };
 
-export const LinkCanisterForm: React.FC<{
+export const CreateCanisterForm: React.FC<{
   onSubmit: (form: Fields) => void;
   submitting: boolean;
 }> = ({ onSubmit, submitting }) => {
@@ -14,28 +15,41 @@ export const LinkCanisterForm: React.FC<{
   return (
     <div>
       <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-        <div className="">
+        <div>
           <label
-            htmlFor="principal"
+            htmlFor="name"
             className="block text-sm font-medium text-gray-700"
           >
-            Canister ID
+            Name
           </label>
           <input
             type="text"
-            {...register("canister_id")}
+            placeholder="Name of new canister"
+            {...register("name")}
+            autoComplete="name"
             className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
             required
           />
         </div>
 
-        <div className="bg-blue-100 p-3 flex items-center">
-          <FiInfo className="text-blue-600 mr-2 text-xl"></FiInfo>
-
-          <span className="text-gray-700">
-            Tip: don&apos;t forget to make this DAO (
-            {process.env.CANDAO_CANISTER_ID}) as the only controller.
-          </span>
+        <div>
+          <label
+            htmlFor="description"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Description
+          </label>
+          <div className="mt-1">
+            <textarea
+              {...register("description")}
+              rows={3}
+              className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"
+              defaultValue={""}
+            />
+          </div>
+          <p className="mt-2 text-sm text-gray-500">
+            Brief description of the new canister.
+          </p>
         </div>
         <button
           type="submit"
