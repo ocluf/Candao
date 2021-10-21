@@ -6,26 +6,51 @@ type Member = record {
 
 type Canister = record {
     canister_id: principal;
+    name: text;
+    description: text;
 };
+
+type canister_settings = record {
+  controllers : opt vec principal;
+  compute_allocation : opt nat;
+  memory_allocation : opt nat;
+  freezing_threshold : opt nat;
+};
+
+type definite_canister_settings = record {
+  controllers : vec principal;
+  compute_allocation : nat;
+  memory_allocation : nat;
+  freezing_threshold : nat;
+};
+
 
 type ProposalType = variant {
     AddMember: Member;
     RemoveMember: principal;
-    CreateCanister;
-    LinkCanister: record {
-        canister_id: principal;
+    CreateCanister : record {
+        create_args: record {
+            settings: opt canister_settings;
+        };
+        name: text;
+        description: text;
     };
+    LinkCanister: Canister;
     InstallCanister: record {
         canister_id: principal;
         mode: variant {
             install; reinstall; upgrade;
         };
         wasm: blob;
+        arg: blob;
     };
-    DeleteCanister;
-    StartCanister;
-    StopCanister;
-    UpdateCanisterSettings;
+    DeleteCanister: record {canister_id : principal};
+    StartCanister: record {canister_id : principal};
+    StopCanister: record {canister_id : principal};
+    UpdateCanisterSettings: record {
+    canister_id : principal;
+    settings : canister_settings;
+  };
 };
 
 
@@ -91,4 +116,5 @@ service : {
     "get_canisters": () -> (vec Canister) query;
     "get_proposals": () -> (vec Proposal) query;
     "get_dao_info": () -> (DaoInfo) query;
+    "test": () -> (text);
 }
