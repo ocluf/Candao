@@ -1,6 +1,7 @@
 use canister_management::{
-    canister_status, create_canister, start_canister, stop_canister, uninstall_code,
-    update_settings, CanisterId, CanisterStatus, CreateCanisterArgs, UpdateSettingsArg,
+    canister_status, create_canister, delete_canister, install_code, start_canister, stop_canister,
+    uninstall_code, update_settings, CanisterId, CanisterInstallArgs, CanisterStatus,
+    CreateCanisterArgs, UpdateSettingsArg,
 };
 use ic_cdk::api::call::CallResult;
 use ic_cdk::api::{caller, time};
@@ -10,9 +11,6 @@ use ic_cdk::export::Principal;
 use ic_cdk_macros::{query, update};
 use std::cell::RefCell;
 
-use canister_management::CanisterInstallArgs;
-
-use crate::canister_management::{delete_canister, install_code};
 mod canister_management;
 mod lifecycle;
 
@@ -22,15 +20,6 @@ struct Member {
     pub name: String,
     pub description: String,
 }
-
-// #[derive(CandidType, Deserialize, Clone)]
-// struct CanisterInstall<'a> {
-//     mode: InstallMode,
-//     canister_id: Principal,
-//     #[serde(with = "serde_bytes")]
-//     wasm_module: &'a [u8],
-//     arg: Vec<u8>,
-// }
 
 #[derive(Clone, CandidType, Deserialize)]
 enum ProposalType {
