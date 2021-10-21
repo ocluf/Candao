@@ -1,10 +1,9 @@
 use canister_management::{
-    canister_status, create_canister, start_canister, stop_canister, update_settings, CanisterId,
-    CanisterStatus, CreateCanisterArgs, UpdateSettingsArg,
+    canister_status, create_canister, start_canister, stop_canister, uninstall_code,
+    update_settings, CanisterId, CanisterStatus, CreateCanisterArgs, UpdateSettingsArg,
 };
 use ic_cdk::api::call::CallResult;
 use ic_cdk::api::{caller, time};
-use ic_cdk::call;
 use ic_cdk::export::candid::{CandidType, Deserialize};
 use ic_cdk::export::Principal;
 
@@ -44,6 +43,7 @@ enum ProposalType {
     },
     LinkCanister(Canister),
     InstallCanister(CanisterInstallArgs),
+    UninstallCanister(CanisterId),
     DeleteCanister(CanisterId),
     StartCanister(CanisterId),
     StopCanister(CanisterId),
@@ -147,6 +147,7 @@ thread_local! {
 #[update]
 fn take_control() -> TakeControlResponse {
     let principal_id = caller();
+    // TODO Uncomment when finished developping for now allow anonymous id for CandidUI
     // if principal_id == Principal::anonymous() {
     //     return TakeControlResponse::NoAnonymous;
     // }
@@ -308,17 +309,18 @@ fn get_canisters() -> Vec<Canister> {
     })
 }
 
-// // #[ic_cdk::export::candid::candid_method(query)]
-// // #[query]
-// async fn get_canister_status(canister_id: Principal) -> CanisterStatus {
-//     let arg = CanisterId {
-//         canister_id: canister_id,
-//     };
-//     let result = canister_status(arg).await;
-//     match result {
-//         Ok(status) => Ok
-// ;    }
-// }
+#[ic_cdk::export::candid::candid_method]
+#[update]
+async fn get_canister_status(canister_id: Principal) -> Option<CanisterStatus> {
+    let arg = CanisterId {
+        canister_id: canister_id,
+    };
+    let result = canister_status(arg).await;
+    match result {
+        Ok((status,)) => Some(status),
+        Err(_) => None,
+    }
+}
 
 #[ic_cdk::export::candid::candid_method(query)]
 #[query]
@@ -335,19 +337,6 @@ fn get_dao_info() -> DaoInfo {
         return s.borrow().info.clone();
     })
 }
-// #[update]
-// async fn test() -> String {
-//     return create_canister(CanisterSettings {
-//         controllers: Some(vec![Principal::from_str(
-//             "eyrii-sjzd2-4zldb-7rplx-lhgrp-hdwvj-bwczy-wvgm3-vk2y3-ywjaa-3qe",
-//         )
-//         .unwrap()]),
-//         freezing_threshold: None,
-//         compute_allocation: None,
-//         memory_allocation: None,
-//     })
-//     .await;
-// }
 
 async fn check_votes(proposal_id: u64) {
     let proposal = find_proposal(proposal_id);
@@ -426,13 +415,15 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
             Ok(())
         }),
         ProposalType::InstallCanister(install_args) => {
-            let result: CallResult<((),)> = call(
-                Principal::management_canister(),
-                "install_code",
-                (install_args,),
-            )
-            .await;
+            let result: CallResult<((),)> = install_code(install_args.clone()).await;
             match result {
+                Ok(_) => Ok(()),
+                Err((_, error)) => Err(error),
+            }
+        }
+        ProposalType::UninstallCanister(canister_id) => {
+            let uninstall_result = uninstall_code(canister_id.clone()).await;
+            match uninstall_result {
                 Ok(_) => Ok(()),
                 Err((_, error)) => Err(error),
             }
@@ -464,8 +455,11 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
             }
         }
         ProposalType::UpdateCanisterSettings(args) => {
-            update_settings(args.clone()).await;
-            Ok(())
+            let update_result = update_settings(args.clone()).await;
+            match update_result {
+                Ok(_) => Ok(()),
+                Err((_, error)) => Err(error),
+            }
         }
     }
 }
