@@ -1,10 +1,20 @@
+use canister_management::{
+    canister_status, create_canister, start_canister, stop_canister, update_settings, CanisterId,
+    CanisterStatus, CreateCanisterArgs, UpdateSettingsArg,
+};
+use ic_cdk::api::call::CallResult;
 use ic_cdk::api::{caller, time};
 use ic_cdk::call;
 use ic_cdk::export::candid::{CandidType, Deserialize};
 use ic_cdk::export::Principal;
+
 use ic_cdk_macros::{query, update};
-use serde_bytes::ByteBuf;
 use std::cell::RefCell;
+
+use canister_management::CanisterInstallArgs;
+
+use crate::canister_management::{delete_canister, install_code};
+mod canister_management;
 mod lifecycle;
 
 #[derive(Clone, CandidType, Deserialize)]
@@ -14,42 +24,30 @@ struct Member {
     pub description: String,
 }
 
-#[derive(CandidType, Deserialize, Clone)]
-enum InstallMode {
-    #[serde(rename = "install")]
-    Install,
-    #[serde(rename = "reinstall")]
-    Reinstall,
-    #[serde(rename = "upgrade")]
-    Upgrade,
-}
-
-#[derive(CandidType, Deserialize, Clone)]
-struct CanisterInstall<'a> {
-    mode: InstallMode,
-    canister_id: Principal,
-    #[serde(with = "serde_bytes")]
-    wasm_module: &'a [u8],
-    arg: Vec<u8>,
-}
+// #[derive(CandidType, Deserialize, Clone)]
+// struct CanisterInstall<'a> {
+//     mode: InstallMode,
+//     canister_id: Principal,
+//     #[serde(with = "serde_bytes")]
+//     wasm_module: &'a [u8],
+//     arg: Vec<u8>,
+// }
 
 #[derive(Clone, CandidType, Deserialize)]
 enum ProposalType {
     AddMember(Member),
     RemoveMember(Principal),
-    CreateCanister,
-    LinkCanister {
-        canister_id: Principal,
+    CreateCanister {
+        create_args: CreateCanisterArgs,
+        name: String,
+        description: String,
     },
-    InstallCanister {
-        canister_id: Principal,
-        mode: InstallMode,
-        wasm: ByteBuf,
-    },
-    DeleteCanister,
-    StartCanister,
-    StopCanister,
-    UpdateCanisterSettings,
+    LinkCanister(Canister),
+    InstallCanister(CanisterInstallArgs),
+    DeleteCanister(CanisterId),
+    StartCanister(CanisterId),
+    StopCanister(CanisterId),
+    UpdateCanisterSettings(UpdateSettingsArg),
 }
 
 #[derive(Clone, CandidType, Deserialize)]
@@ -115,8 +113,8 @@ struct DaoInfo {
 #[derive(Clone, CandidType, Deserialize)]
 struct Canister {
     pub canister_id: Principal,
-    // pub name: String,
-    // pub description: String,
+    pub name: String,
+    pub description: String,
 }
 
 #[derive(Clone, CandidType, Deserialize)]
@@ -149,9 +147,9 @@ thread_local! {
 #[update]
 fn take_control() -> TakeControlResponse {
     let principal_id = caller();
-    if principal_id == Principal::anonymous() {
-        return TakeControlResponse::NoAnonymous;
-    }
+    // if principal_id == Principal::anonymous() {
+    //     return TakeControlResponse::NoAnonymous;
+    // }
     let members_empty = STATE.with(|s| s.borrow().members.len() == 0);
     if members_empty {
         let new_member = Member {
@@ -173,12 +171,12 @@ async fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse 
         return CreateProposalResponse::NoPermission;
     }
     match proposal_type {
-        ProposalType::LinkCanister { canister_id } => {
+        ProposalType::LinkCanister(ref canister) => {
             if STATE.with(|s| {
                 s.borrow()
                     .canisters
                     .iter()
-                    .find(|c| c.canister_id == canister_id)
+                    .find(|c| c.canister_id == canister.canister_id)
                     .is_some()
             }) {
                 return CreateProposalResponse::CanisterAlreadyAdded;
@@ -310,6 +308,18 @@ fn get_canisters() -> Vec<Canister> {
     })
 }
 
+// // #[ic_cdk::export::candid::candid_method(query)]
+// // #[query]
+// async fn get_canister_status(canister_id: Principal) -> CanisterStatus {
+//     let arg = CanisterId {
+//         canister_id: canister_id,
+//     };
+//     let result = canister_status(arg).await;
+//     match result {
+//         Ok(status) => Ok
+// ;    }
+// }
+
 #[ic_cdk::export::candid::candid_method(query)]
 #[query]
 fn get_proposals() -> Vec<Proposal> {
@@ -325,6 +335,19 @@ fn get_dao_info() -> DaoInfo {
         return s.borrow().info.clone();
     })
 }
+// #[update]
+// async fn test() -> String {
+//     return create_canister(CanisterSettings {
+//         controllers: Some(vec![Principal::from_str(
+//             "eyrii-sjzd2-4zldb-7rplx-lhgrp-hdwvj-bwczy-wvgm3-vk2y3-ywjaa-3qe",
+//         )
+//         .unwrap()]),
+//         freezing_threshold: None,
+//         compute_allocation: None,
+//         memory_allocation: None,
+//     })
+//     .await;
+// }
 
 async fn check_votes(proposal_id: u64) {
     let proposal = find_proposal(proposal_id);
@@ -357,7 +380,7 @@ async fn check_votes(proposal_id: u64) {
     }
 }
 
-async fn execute(proposal: &Proposal) -> Result<(), ()> {
+async fn execute(proposal: &Proposal) -> Result<(), String> {
     match &proposal.proposal_type {
         ProposalType::AddMember(member) => {
             STATE.with(|s| s.borrow_mut().members.push(member.clone()));
@@ -369,58 +392,81 @@ async fn execute(proposal: &Proposal) -> Result<(), ()> {
                 .retain(|m| m.principal_id != *principal);
             return Ok(());
         }),
-        ProposalType::CreateCanister => todo!(),
-        ProposalType::LinkCanister { canister_id } => STATE.with(|s| {
+        ProposalType::CreateCanister {
+            create_args,
+            name,
+            description,
+        } => {
+            let result = create_canister(create_args.clone()).await;
+            match result {
+                Ok(canister_id) => {
+                    STATE.with(|s| {
+                        s.borrow_mut().canisters.push(Canister {
+                            canister_id: canister_id.0.canister_id,
+                            name: name.to_string(),
+                            description: description.to_string(),
+                        })
+                    });
+                    Ok(())
+                }
+                Err((_, error)) => return Err(error),
+            }
+        }
+        ProposalType::LinkCanister(canister) => STATE.with(|s| {
             let canisters = &mut s.borrow_mut().canisters;
 
-            if canisters.iter().any(|c| &c.canister_id == canister_id) {
-                return Err(());
+            if canisters
+                .iter()
+                .any(|c| c.canister_id == canister.canister_id)
+            {
+                return Err("canister already in DAO".to_string());
             }
 
-            canisters.push(Canister {
-                canister_id: *canister_id,
-            });
-
+            canisters.push(canister.clone());
             Ok(())
         }),
-        ProposalType::InstallCanister {
-            canister_id,
-            mode,
-            wasm,
-        } => {
-            #[derive(CandidType)]
-            struct CanisterInstallArgs {
-                mode: InstallMode,
-                canister_id: Principal,
-                wasm_module: Vec<u8>,
-                arg: Vec<u8>,
-                compute_allocation: Option<u64>,
-                memory_allocation: Option<u64>,
-            }
-
-            // Principal::management_canister()
-            let install_result: ic_cdk::api::call::CallResult<()> = call(
+        ProposalType::InstallCanister(install_args) => {
+            let result: CallResult<((),)> = call(
                 Principal::management_canister(),
                 "install_code",
-                (CanisterInstallArgs {
-                    arg: vec![],
-                    canister_id: *canister_id,
-                    wasm_module: wasm.to_vec(),
-                    compute_allocation: None,
-                    memory_allocation: None,
-                    mode: mode.to_owned(),
-                },),
+                (install_args,),
             )
             .await;
-
-            // ic_cdk::println!("install_result: {:#?}", install_result);
-
+            match result {
+                Ok(_) => Ok(()),
+                Err((_, error)) => Err(error),
+            }
+        }
+        ProposalType::DeleteCanister(canister_id) => {
+            let result = delete_canister(canister_id.clone()).await;
+            match result {
+                Ok(_) => STATE.with(|s| {
+                    s.borrow_mut()
+                        .canisters
+                        .retain(|c| c.canister_id != canister_id.canister_id);
+                    Ok(())
+                }),
+                Err((_, error)) => Err(error),
+            }
+        }
+        ProposalType::StartCanister(canister_id) => {
+            let start_result = start_canister(canister_id.clone()).await;
+            match start_result {
+                Ok(_) => Ok(()),
+                Err((_, error)) => Err(error),
+            }
+        }
+        ProposalType::StopCanister(canister_id) => {
+            let stop_result = stop_canister(canister_id.clone()).await;
+            match stop_result {
+                Ok(_) => Ok(()),
+                Err((_, error)) => Err(error),
+            }
+        }
+        ProposalType::UpdateCanisterSettings(args) => {
+            update_settings(args.clone()).await;
             Ok(())
         }
-        ProposalType::DeleteCanister => todo!(),
-        ProposalType::StartCanister => todo!(),
-        ProposalType::StopCanister => todo!(),
-        ProposalType::UpdateCanisterSettings => todo!(),
     }
 }
 
