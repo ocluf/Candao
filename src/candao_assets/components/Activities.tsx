@@ -7,6 +7,10 @@ import {
 import { useRouter } from "next/dist/client/router";
 import { useDaoMembers } from "../hooks/useDaoMembers";
 import Link from "next/link";
+import { useActor } from "./ActorProvider";
+import Proposals from "../pages/proposals";
+import { useProposals } from "../hooks/useProposals";
+import { useCanisters } from "../hooks/useCanisters";
 
 type ActivityCard = {
   name: string;
@@ -17,6 +21,9 @@ type ActivityCard = {
 
 export default function Activities() {
   const { daoMembers, daoMembersError, daoMembersLoading } = useDaoMembers();
+  const { proposalsLoading, proposalsError, proposals } = useProposals();
+  const { canistersLoading, canistersError, canisters } = useCanisters();
+
   const nrOfMembers = () => {
     if (daoMembersLoading) {
       return "...";
@@ -26,13 +33,29 @@ export default function Activities() {
       return daoMembers?.length.toString() || "No members";
     }
   };
+
   const nrOfProposals = () => {
-    //TODO write gproposals hook
-  };
+    if (proposalsLoading) {
+      return "..."
+    } else if (proposalsError){
+      return "❌";
+    } else {
+      return proposals?.length.toString() || "No proposals"
+    }
+  }
 
   const nrOfCanisters = () => {
-    //TODO write gcanisters hook
-  };
+    if (canistersLoading) {
+      return "..."
+    } else if (proposalsError){
+      return "❌";
+    } else {
+      return canisters?.length.toString() || "No canisters"
+    }
+  }
+ 
+
+
   const Activities: Array<ActivityCard> = [
     {
       name: "Total members",
@@ -44,7 +67,7 @@ export default function Activities() {
     },
     {
       name: "Total canisters",
-      subtitle: "3",
+      subtitle: nrOfCanisters(),
       route: "/canisters",
       icon: (
         <ServerIcon className="relative top-3 left-3 bg-purple-600 h-5 w-5 text-white" />
@@ -52,7 +75,7 @@ export default function Activities() {
     },
     {
       name: "Proposals",
-      subtitle: "20 new",
+      subtitle: nrOfProposals(),
       route: "/proposals",
       icon: (
         <CursorClickIcon className="relative top-3 left-3 bg-purple-600 h-5 w-5 text-white" />
