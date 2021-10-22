@@ -5,7 +5,7 @@ import { useAuth } from "../components/AuthProvider";
 export function useDaoMembers() {
   const { actor } = useActor();
   const { authClient } = useAuth();
-  const { isLoading, error, data } = useQuery("daoMembers", () =>
+  const { isLoading, error, data, refetch } = useQuery("daoMembers", () =>
     actor.get_members()
   );
 
@@ -21,5 +21,6 @@ export function useDaoMembers() {
           m.principal_id.toString() ===
           authClient.getIdentity().getPrincipal().toString()
       ),
+    refetchDaoMembers: refetch,
   };
 }

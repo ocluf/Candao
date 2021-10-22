@@ -1,24 +1,34 @@
 import { NextPage } from "next";
+import Link from "next/link";
 import { useRouter } from "next/dist/client/router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { useActor } from "../components/ActorProvider";
 import { LoginState, useAuth } from "../components/AuthProvider";
-import { ClaimSteps } from "../components/ClaimSteps";
+import { Button } from "../components/Button";
+import { Card } from "../components/Card";
+import { ClaimStep, ClaimSteps } from "../components/Claim/ClaimSteps";
+import { DaoForm, DaoFormFields } from "../components/Claim/DaoForm";
+import {
+  ProfileForm,
+  ProfileFormFields,
+} from "../components/Claim/ProfileForm";
 import { Nav } from "../components/Nav";
+import PageHeading from "../components/PageHeading";
 import { useDaoInfo } from "../hooks/useDaoInfo";
 import { useDaoMembers } from "../hooks/useDaoMembers";
 
-enum State {
-  Profile,
-  Dao,
-  Done,
-}
-
 const Claim: NextPage = () => {
-  const { daoInfo, daoInfoError, daoInfoLoading } = useDaoInfo();
+  const { daoInfo, daoInfoError, daoInfoLoading, refetchDaoInfo } =
+    useDaoInfo();
   const { authState, login, authClient, logout } = useAuth();
-  const { daoMembers, daoMembersError, daoMembersLoading, me } =
-    useDaoMembers();
+  const {
+    daoMembers,
+    daoMembersError,
+    daoMembersLoading,
+    me,
+    refetchDaoMembers,
+  } = useDaoMembers();
   const { actor } = useActor();
   const router = useRouter();
 
@@ -28,38 +38,68 @@ const Claim: NextPage = () => {
     }
   }, [authState]);
 
-  if (
-    daoInfoLoading ||
-    daoMembersLoading ||
-    authState !== LoginState.LoggedIn
-  ) {
-    return (
-      <div>
-        <Nav showMenu={false}></Nav>
-        <main>Loading DAO info...</main>
-      </div>
-    );
-  }
+  const [step, setStep] = useState<ClaimStep>(ClaimStep.Profile);
+  const [working, setWorking] = useState(false);
 
-  let state = State.Profile;
+  const onProfileSubmit = async (form: ProfileFormFields) => {
+    setWorking(true);
+    await actor.update_member_info(form.name, form.description);
+    await refetchDaoMembers();
+    setWorking(false);
+    setStep(ClaimStep.Dao);
+  };
+  const onDaoSubmit = async (form: DaoFormFields) => {
+    setWorking(true);
+    await actor.update_dao_info({
+      title: form.name,
+      description: form.description,
+    });
+    await refetchDaoInfo();
+    setWorking(false);
+    setStep(ClaimStep.Done);
+  };
 
-  if (me && !me.name) {
-    return (
-      <div>
-        <Nav showMenu={false}></Nav>
-
-        <main className="max-w-4xl mx-auto pt-4">
-          <ClaimSteps onClick={() => { }}></ClaimSteps>
-        </main>
-      </div>
-    );
-  }
+  console.log(me);
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-100">
       <Nav showMenu={false}></Nav>
+      <PageHeading pageTitle="Welcome!" crumbs={[]}></PageHeading>
+      <main className="max-w-7xl mx-auto pt-12 px-4 sm:px-6 lg:px-8 flex space-x-8">
+        <ClaimSteps onClick={setStep} currentStep={step}></ClaimSteps>
 
-      <main></main>
+        {step === ClaimStep.Profile && (
+          <ProfileForm
+            onSubmit={onProfileSubmit}
+            working={working}
+            initialName={me ? me.name : ""}
+            initialDescription={me ? me.description : ""}
+          ></ProfileForm>
+        )}
+        {step === ClaimStep.Dao && (
+          <DaoForm
+            onSubmit={onDaoSubmit}
+            working={working}
+            initialName={daoInfo ? daoInfo.title : ""}
+            initialDescription={daoInfo ? daoInfo.description : ""}
+          ></DaoForm>
+        )}
+        {step === ClaimStep.Done && (
+          <Card className="flex-1">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-8">
+              Setup complete!
+            </h3>
+            <p className="mt-6 text-base leading-5 font-normal text-gray-600">
+              You can now start using your DAO.
+            </p>
+            <Link href="/dao" passHref>
+              <Button as="a" className="mt-12">
+                Go to the Dashboard
+              </Button>
+            </Link>
+          </Card>
+        )}
+      </main>
     </div>
   );
 };
