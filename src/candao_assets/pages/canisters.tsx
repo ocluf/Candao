@@ -1,10 +1,9 @@
 import type { NextPage } from "next";
+import Canisters from "../components/Canisters";
 import { Nav } from "../components/Nav";
 import PageHeading from "../components/PageHeading";
-// import { useCanisterData } from "../hooks/useCanisterData";
 
-const Canisters: NextPage = () => {
-  // useCanisterData();
+const CanisterPage: NextPage = () => {
   return (
     <div className="h-screen bg-gray-100">
       <Nav current="Canisters" />
@@ -22,8 +21,9 @@ const Canisters: NextPage = () => {
           Create Canister
         </button>
       </PageHeading>
+      <Canisters></Canisters>
     </div>
   );
 };
 
-export default Canisters;
+export default CanisterPage;

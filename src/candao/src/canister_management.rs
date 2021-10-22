@@ -11,6 +11,14 @@ pub struct CanisterSettings {
     pub freezing_threshold: Option<candid::Nat>,
 }
 
+#[derive(Clone, Debug, CandidType, Deserialize)]
+pub struct DefiniteCanisterSettings {
+    controllers: Vec<Principal>,
+    compute_allocation: candid::Nat,
+    memory_allocation: candid::Nat,
+    freezing_threshold: candid::Nat,
+}
+
 #[derive(CandidType, Clone, Deserialize)]
 pub enum InstallMode {
     #[serde(rename = "install")]
@@ -21,7 +29,7 @@ pub enum InstallMode {
     Upgrade,
 }
 
-#[derive(CandidType, Clone, Deserialize)]
+#[derive(CandidType, Debug, Clone, Deserialize)]
 pub enum Status {
     #[serde(rename = "running")]
     Running,
@@ -42,14 +50,6 @@ pub struct UpdateSettingsArg {
     settings: CanisterSettings,
 }
 
-#[derive(Clone, Debug, CandidType, Deserialize)]
-pub struct DefiniteCanisterSettings {
-    controllers: Option<Vec<Principal>>,
-    compute_allocation: Option<candid::Nat>,
-    memory_allocation: Option<candid::Nat>,
-    freezing_threshold: Option<candid::Nat>,
-}
-
 #[derive(Clone, CandidType, Deserialize)]
 pub struct CreateCanisterArgs {
     settings: Option<CanisterSettings>,
@@ -63,7 +63,7 @@ pub struct CanisterInstallArgs {
     pub arg: Vec<u8>,
 }
 
-#[derive(Clone, CandidType, Deserialize)]
+#[derive(Clone, Debug, CandidType, Deserialize)]
 pub struct CanisterStatus {
     status: Status,
     settings: DefiniteCanisterSettings,
