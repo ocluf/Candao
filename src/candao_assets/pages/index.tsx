@@ -16,7 +16,8 @@ enum ViewState {
 }
 
 const Home: NextPage = () => {
-  const { daoMembers, daoMembersError, daoMembersLoading } = useDaoMembers();
+  const { daoMembers, daoMembersError, daoMembersLoading, me } =
+    useDaoMembers();
   const { daoInfo, daoInfoError, daoInfoLoading } = useDaoInfo();
   const { authState, login, authClient, logout } = useAuth();
   const { actor } = useActor();
@@ -46,20 +47,11 @@ const Home: NextPage = () => {
       // claimed
       if (authState === LoginState.LoggedOut) {
         setViewState(ViewState.Claimed);
-      } else if (
-        daoMembers.find(
-          (m) =>
-            m.principal_id.toString() ===
-            authClient.getIdentity().getPrincipal().toString()
-        )
-      ) {
+      } else if (me) {
         // logged in and is member of DAO
-        if (!daoInfo || !daoInfo.title) {
+        if (!daoInfo || !daoInfo.title || !me.name) {
           // dao claimed but hasn't been configured
-
-          // TODO: implement claim page
-          // router.push("/claim");
-          router.push("/dao");
+          router.push("/claim");
         } else {
           router.push("/dao");
         }
