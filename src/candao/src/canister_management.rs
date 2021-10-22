@@ -59,10 +59,8 @@ pub struct CreateCanisterArgs {
 pub struct CanisterInstallArgs {
     pub mode: InstallMode,
     pub canister_id: Principal,
-    pub wasm: Vec<u8>,
+    pub wasm_module: Vec<u8>,
     pub arg: Vec<u8>,
-    // pub compute_allocation: Option<u64>,
-    // pub memory_allocation: Option<u64>,
 }
 
 #[derive(Clone, CandidType, Deserialize)]

@@ -45,7 +45,7 @@ type ProposalType = variant {
         mode: variant {
             install; reinstall; upgrade;
         };
-        wasm: blob;
+        wasm_module: blob;
         arg: blob;
     };
     UninstallCanister: CanisterId; 

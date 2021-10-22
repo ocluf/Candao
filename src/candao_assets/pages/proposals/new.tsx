@@ -135,8 +135,8 @@ const Proposals: NextPage = () => {
                       InstallCanister: {
                         canister_id: Principal.fromText(form.canister_id),
                         mode: installModeToCandidInstallMode(form.mode),
-                        wasm: Array.from(
-                          new Uint8Array(await form.wasm[0].arrayBuffer())
+                        wasm_module: Array.from(
+                          new Uint8Array(await form.wasm_module[0].arrayBuffer())
                         ),
                         arg: [],
                       },
