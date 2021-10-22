@@ -5,6 +5,11 @@ import { useState } from "react";
 import { useActor } from "../../components/ActorProvider";
 import { Nav } from "../../components/Nav";
 import { AddMemberForm } from "../../components/NewProposalForms/AddMemberForm";
+import { CreateCanisterForm } from "../../components/NewProposalForms/CreateCanisterForm";
+import {
+  InstallCanisterForm,
+  installModeToCandidInstallMode,
+} from "../../components/NewProposalForms/InstallCanisterForm";
 import { LinkCanisterForm } from "../../components/NewProposalForms/LinkCanisterForm";
 import { RemoveMemberForm } from "../../components/NewProposalForms/RemoveMemberForm";
 import PageHeading from "../../components/PageHeading";
@@ -17,6 +22,7 @@ const enabledProposalTypes: KeysOfUnion<ProposalType>[] = [
   "RemoveMember",
   "LinkCanister",
   "InstallCanister",
+  "CreateCanister",
 ];
 
 const Proposals: NextPage = () => {
@@ -107,6 +113,8 @@ const Proposals: NextPage = () => {
                     const response = await actor.create_proposal({
                       LinkCanister: {
                         canister_id: Principal.fromText(form.canister_id),
+                        description: "",
+                        name: "poop",
                       },
                     });
                     setCreating(false);
@@ -116,6 +124,52 @@ const Proposals: NextPage = () => {
                   }}
                   submitting={creating}
                 ></LinkCanisterForm>
+              )}
+              {proposalType === "InstallCanister" && (
+                <InstallCanisterForm
+                  onSubmit={async (form) => {
+                    // console.log(form);
+
+                    setCreating(true);
+                    const response = await actor.create_proposal({
+                      InstallCanister: {
+                        canister_id: Principal.fromText(form.canister_id),
+                        mode: installModeToCandidInstallMode(form.mode),
+                        wasm: Array.from(
+                          new Uint8Array(await form.wasm[0].arrayBuffer())
+                        ),
+                        arg: [],
+                      },
+                    });
+                    setCreating(false);
+                    if (enumIs(response, "Success")) {
+                      router.push("/proposals");
+                    }
+                  }}
+                  submitting={creating}
+                ></InstallCanisterForm>
+              )}
+              {proposalType === "CreateCanister" && (
+                <CreateCanisterForm
+                  onSubmit={async (form) => {
+                    setCreating(true);
+                    const response = await actor.create_proposal({
+                      CreateCanister: {
+                        name: form.name,
+                        create_args: { settings: [] },
+                        description: form.description,
+                      },
+                    });
+                    setCreating(false);
+
+                    console.log(response);
+
+                    if (enumIs(response, "Success")) {
+                      router.push("/proposals");
+                    }
+                  }}
+                  submitting={creating}
+                ></CreateCanisterForm>
               )}
             </div>
           </div>

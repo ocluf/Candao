@@ -69,7 +69,9 @@ export function getProposalSummary(
     // return `Delete ${proposal.DeleteCanister.canister_id}`;
     return `Delete a canister`;
   } else if (enumIs(proposalType, "InstallCanister")) {
-    return `${proposalType.InstallCanister.mode} canister ${proposalType.InstallCanister.canister_id}`;
+    return `${getInstallModeName(proposalType.InstallCanister.mode)} canister ${
+      proposalType.InstallCanister.canister_id
+    }`;
   } else if (enumIs(proposalType, "LinkCanister")) {
     return `Link canister ${proposalType.LinkCanister.canister_id}`;
   } else if (enumIs(proposalType, "RemoveMember")) {
@@ -116,6 +118,21 @@ export function getProposalStatusName(status: ProposalStatus): string {
     return "Voting";
   }
   unreachable(status);
+}
+
+export function getInstallModeName(
+  mode: { reinstall: null } | { upgrade: null } | { install: null }
+): string {
+  if (enumIs(mode, "install")) {
+    return "Install";
+  }
+  if (enumIs(mode, "reinstall")) {
+    return "Reinstall";
+  }
+  if (enumIs(mode, "upgrade")) {
+    return "Upgrade";
+  }
+  unreachable(mode);
 }
 
 export enum UserVote {

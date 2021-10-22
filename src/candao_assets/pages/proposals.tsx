@@ -10,6 +10,7 @@ import { useProposals } from "../hooks/useProposals";
 import { enumIs } from "../utils/enums";
 import { resolveMemberPrincipalId, shortenPrincipalId } from "../utils/members";
 import {
+  getInstallModeName,
   getProposalStatusName,
   getProposalSummary,
   getProposalTypeName,
@@ -43,8 +44,8 @@ const ProposalSummary: React.FC<{
   } else if (enumIs(proposalType, "InstallCanister")) {
     return (
       <>
-        {proposalType.InstallCanister.mode} canister{" "}
-        {proposalType.InstallCanister.canister_id}
+        {getInstallModeName(proposalType.InstallCanister.mode)} canister{" "}
+        {proposalType.InstallCanister.canister_id.toString()}
       </>
     );
   } else if (enumIs(proposalType, "LinkCanister")) {

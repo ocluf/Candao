@@ -1,10 +1,10 @@
 import type { NextPage } from "next";
 import { Nav } from "../components/Nav";
 import PageHeading from "../components/PageHeading";
-import { useCanisterData } from "../hooks/userCanisterData";
+// import { useCanisterData } from "../hooks/useCanisterData";
 
 const Canisters: NextPage = () => {
-  useCanisterData();
+  // useCanisterData();
   return (
     <div className="h-screen bg-gray-100">
       <Nav current="Canisters" />
@@ -22,7 +22,6 @@ const Canisters: NextPage = () => {
           Create Canister
         </button>
       </PageHeading>
-
     </div>
   );
 };
