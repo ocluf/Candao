@@ -47,13 +47,13 @@ const Members: NextPage = () => {
           setOpen={setOpen}
           member={member}
         ></RemoveMemberModal>
-        ;
+
         <div className="h-screen bg-gray-100">
           <Nav current="Members"></Nav>
           <PageHeading
             crumbs={["Dashboard", "Members", "Member profile"]}
             pageTitle="Member"
-            className="bg-transparent"
+            className="bg-white"
           >
             <button
               type="button"
