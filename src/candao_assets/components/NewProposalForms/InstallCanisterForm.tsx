@@ -7,7 +7,7 @@ import { unreachable } from "../../utils/unreachable";
 type Fields = {
   canister_id: string;
   mode: "install" | "upgrade" | "reinstall";
-  wasm: FileList;
+  wasm_module: FileList;
 };
 
 export const installModeToCandidInstallMode = (mode: Fields["mode"]) => {
@@ -30,9 +30,9 @@ export const InstallCanisterForm: React.FC<{
   const { register, handleSubmit, watch } = useForm<Fields>();
   const { canisters, canistersLoading } = useCanisters();
   const watchedCanisterId = watch("canister_id");
-  const watchedFile = watch("wasm");
+  const watchedFile = watch("wasm_module");
   const uploadRef = useRef<HTMLInputElement | null>(null);
-  const { ref, ...rest } = register("wasm");
+  const { ref, ...rest } = register("wasm_module");
 
   console.log(watchedFile);
 

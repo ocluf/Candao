@@ -62,13 +62,17 @@ const ProposalSummary: React.FC<{
     return <>Stop Canister X</>;
   } else if (enumIs(proposalType, "UpdateCanisterSettings")) {
     return <>Update Canister X Settings</>;
+  } else if (enumIs(proposalType, "DepositCycles")){
+    return <>Deposit Cycles</>;
+  } else if (enumIs(proposalType, "UninstallCanister")){
+    return <>Uninstall Canister</>;
   }
 
   unreachable(proposalType);
 };
 
 const VoteStatus: React.FC<{
-  yes: number;
+  yes: number; 
   no: number;
   total: number;
 }> = ({ yes, no, total }) => {

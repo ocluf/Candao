@@ -45,7 +45,7 @@ type ProposalType = variant {
         mode: variant {
             install; reinstall; upgrade;
         };
-        wasm: blob;
+        wasm_module: blob;
         arg: blob;
     };
     UninstallCanister: CanisterId; 
@@ -53,9 +53,10 @@ type ProposalType = variant {
     StartCanister: CanisterId;
     StopCanister: CanisterId;
     UpdateCanisterSettings: record {
-    canister_id : principal;
-    settings : canister_settings;
-  };
+        canister_id : principal;
+        settings : canister_settings;
+    };
+    DepositCycles: CanisterId;
 };
 
 
