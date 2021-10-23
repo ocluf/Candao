@@ -25,9 +25,9 @@ const MemberForm: React.FC<{ member: Member }> = ({ member }) => {
   };
 
   return (
-    <>
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <form
-        className="mx-8 m-5 px-8 py-12 bg-white space-y-8 divide-y divide-gray-200"
+        className="px-8 py-12 max-w-7xl bg-white shadow sm:rounded space-y-8 divide-y divide-gray-200"
         onSubmit={handleSubmit(onSubmit)}
       >
         <div className="space-y-8 divide-y divide-gray-200 sm:space-y-5">
@@ -122,7 +122,7 @@ const MemberForm: React.FC<{ member: Member }> = ({ member }) => {
           </button>
         </div>
       </form>
-    </>
+    </main>
   );
 };
 
