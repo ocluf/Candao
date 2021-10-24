@@ -1,6 +1,7 @@
 import { Principal } from "@dfinity/principal";
 import {
   Canister,
+  CanisterStatus,
   Member,
   Proposal,
   ProposalStatus,
@@ -133,6 +134,21 @@ export function getInstallModeName(
     return "Upgrade";
   }
   unreachable(mode);
+}
+
+export function getCanisterStatusName(
+  status: { 'stopped' : null } |
+  { 'stopping' : null } |
+  { 'running' : null } 
+){
+  if(enumIs(status, "running")){
+    return "Running";
+  } else if (enumIs(status, "stopped")){
+    return "Stopped";
+  } else if(enumIs(status,"stopping")){
+    return "Running";
+  } 
+  unreachable(status);
 }
 
 export enum UserVote {
