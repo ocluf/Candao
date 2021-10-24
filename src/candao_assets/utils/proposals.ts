@@ -14,6 +14,7 @@ import { unreachable } from "./unreachable";
 
 export const proposalNameMap: Record<KeysOfUnion<ProposalType>, string> = {
   AddMember: "Add Member",
+  JoinRequest: "Accept Join Request",
   CreateCanister: "Create Canister",
   DeleteCanister: "Delete Canister",
   InstallCanister: "Install Canister",
@@ -23,7 +24,7 @@ export const proposalNameMap: Record<KeysOfUnion<ProposalType>, string> = {
   StopCanister: "Stop Canister",
   UpdateCanisterSettings: "Update Canister Settings",
   DepositCycles: "Deposit Cycles",
-  UninstallCanister: "Uninstall Canister"
+  UninstallCanister: "Uninstall Canister",
 };
 
 export function getProposalTypeName(proposal: ProposalType): string {
@@ -45,10 +46,12 @@ export function getProposalTypeName(proposal: ProposalType): string {
     return "Stop Canister";
   } else if (enumIs(proposal, "UpdateCanisterSettings")) {
     return "Update Canister Settings";
-  } else if (enumIs(proposal, "DepositCycles")){
+  } else if (enumIs(proposal, "DepositCycles")) {
     return "Deposit Cycles";
-  } else if (enumIs(proposal, "UninstallCanister")){
-    return "Uninstall Canister"
+  } else if (enumIs(proposal, "UninstallCanister")) {
+    return "Uninstall Canister";
+  } else if (enumIs(proposal, "JoinRequest")) {
+    return "Join Request";
   }
 
   unreachable(proposal);
@@ -86,10 +89,14 @@ export function getProposalSummary(
     return `Stop Canister X`;
   } else if (enumIs(proposalType, "UpdateCanisterSettings")) {
     return `Update Canister X Settings`;
-  } else if (enumIs(proposalType, "DepositCycles")){
+  } else if (enumIs(proposalType, "DepositCycles")) {
     return "Deposit cycles to canister X from DAO Canister";
-  } else if (enumIs(proposalType, "UninstallCanister")){
+  } else if (enumIs(proposalType, "UninstallCanister")) {
     return "Remove code from a canister";
+  } else if (enumIs(proposalType, "JoinRequest")) {
+    return `Accept join request of ${
+      proposalType.JoinRequest.name
+    } as ${shortenPrincipalId(proposal.proposer.toString())}`;
   }
 
   unreachable(proposalType);
@@ -137,17 +144,15 @@ export function getInstallModeName(
 }
 
 export function getCanisterStatusName(
-  status: { 'stopped' : null } |
-  { 'stopping' : null } |
-  { 'running' : null } 
-){
-  if(enumIs(status, "running")){
+  status: { stopped: null } | { stopping: null } | { running: null }
+) {
+  if (enumIs(status, "running")) {
     return "Running";
-  } else if (enumIs(status, "stopped")){
+  } else if (enumIs(status, "stopped")) {
     return "Stopped";
-  } else if(enumIs(status,"stopping")){
+  } else if (enumIs(status, "stopping")) {
     return "Running";
-  } 
+  }
   unreachable(status);
 }
 

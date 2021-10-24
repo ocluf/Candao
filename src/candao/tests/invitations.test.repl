@@ -1,0 +1,107 @@
+identity alice;
+
+let id = call ic.provisional_create_canister_with_cycles(record { settings = null; amount = null });
+let candao = id.canister_id;
+candao;
+let _ = call ic.install_code(
+  record {
+    arg = encode ();
+    wasm_module = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+    mode = variant { install };
+    canister_id = candao;
+  },
+);
+
+let _ = call candao.take_control();
+
+
+// ----------------------------------------------------------------
+// invitation can be created without being a member
+
+identity bob;
+let _ = call candao.create_proposal(variant 
+    {JoinRequest=record {
+        name="Bob"; 
+        message="Please add me"; 
+        principal_id=bob;
+        }
+    });
+assert _ == variant { Success };
+
+
+// ----------------------------------------------------------------
+// invitation cannot be added for the same principal id twice
+
+let _ = call candao.create_proposal(variant 
+    {JoinRequest=record {
+        name="Bob"; 
+        message="Please add me"; 
+        principal_id=bob;
+        }
+    });
+assert _ == variant { MemberAlreadyAdded };
+
+
+// ----------------------------------------------------------------
+// invitation proposal doesn't have an initial vote
+
+let proposals = call candao.get_proposals();
+assert proposals ~= vec {
+  record {
+    proposer = bob;
+    yes_votes = vec {};
+    no_votes = vec {};
+    proposal_status = variant { InProgress };
+  };
+};
+
+let proposal_id = proposals[0].proposal_id;
+
+// ----------------------------------------------------------------
+// after rejected invitation no new member is added
+
+identity alice;
+let _ = call candao.vote(proposal_id, variant { No });
+assert _ == variant { VoteCast };
+
+let members = call candao.get_members();
+assert members ~= vec {
+  record {
+    principal_id = alice;
+  };
+};
+
+
+// ----------------------------------------------------------------
+// after successful invitation the member is added to the members
+
+identity carol;
+let _ = call candao.create_proposal(variant 
+    {JoinRequest=record {
+        name="Carol"; 
+        message="Please add me"; 
+        principal_id=carol;
+        }
+    });
+assert _ == variant { Success };
+
+let proposals = call candao.get_proposals();
+let proposal_id = proposals[1].proposal_id;
+
+identity alice;
+let _ = call candao.vote(proposal_id, variant { Yes });
+assert _ == variant { VoteCast };
+
+let members = call candao.get_members();
+assert members ~= vec {
+  record {
+    principal_id = alice;
+  };
+  record {
+    principal_id = carol;
+  };
+};
+
+
+
+
