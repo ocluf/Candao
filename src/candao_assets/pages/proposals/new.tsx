@@ -81,6 +81,7 @@ const Proposals: NextPage = () => {
                         name: form.name,
                         description: form.description,
                         principal_id: Principal.fromText(form.principal),
+                        can_vote: form.canVote,
                       },
                     });
                     setCreating(false);
