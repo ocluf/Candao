@@ -22,9 +22,23 @@ struct Member {
 }
 
 #[derive(Clone, CandidType, Deserialize)]
+struct InvitationRequest {
+    pub name: String,
+    pub message: String,
+}
+
+#[derive(Clone, CandidType, Deserialize)]
+struct InvitationStatus {
+    pub name: String,
+    pub message: String,
+    pub status: ProposalStatus,
+}
+
+#[derive(Clone, CandidType, Deserialize)]
 enum ProposalType {
     AddMember(Member),
     RemoveMember(Principal),
+    JoinRequest(InvitationRequest),
     CreateCanister {
         create_args: CreateCanisterArgs,
         name: String,
@@ -77,6 +91,8 @@ enum CreateProposalResponse {
     Success,
     NoPermission,
     CanisterAlreadyAdded,
+    MemberAlreadyAdded,
+    InvitationExists,
 }
 
 #[derive(CandidType, Deserialize)]
@@ -158,10 +174,39 @@ fn take_control() -> TakeControlResponse {
 #[update]
 async fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
     let proposer = caller();
-    if !is_member(proposer) {
+
+    let is_public_request = match &proposal_type {
+        ProposalType::JoinRequest(_) => true,
+        _ => false,
+    };
+
+    if !is_public_request && !is_member(proposer) {
         return CreateProposalResponse::NoPermission;
     }
+
     match proposal_type {
+        ProposalType::JoinRequest(_) => {
+            if STATE.with(|s| {
+                s.borrow()
+                    .members
+                    .iter()
+                    .find(|m| m.principal_id == proposer)
+                    .is_some()
+            }) {
+                return CreateProposalResponse::MemberAlreadyAdded;
+            }
+            if STATE.with(|s| {
+                s.borrow()
+                    .proposals
+                    .iter()
+                    .rev()
+                    .find(|m| m.proposer == proposer)
+                    .filter(|p| matches!(p.proposal_status, ProposalStatus::InProgress))
+                    .is_some()
+            }) {
+                return CreateProposalResponse::InvitationExists;
+            }
+        }
         ProposalType::LinkCanister(ref canister) => {
             if STATE.with(|s| {
                 s.borrow()
@@ -179,6 +224,12 @@ async fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse 
     let proposal_id = STATE.with(|s| {
         let state = &mut s.borrow_mut();
 
+        let yes_votes = if is_public_request {
+            vec![]
+        } else {
+            vec![proposer]
+        };
+
         let next_id = state.proposals.len() as u64;
         let proposal = Proposal {
             proposal_id: next_id,
@@ -186,7 +237,7 @@ async fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse 
             proposal_date: time(),
             proposal_type: proposal_type,
             proposal_status: ProposalStatus::InProgress,
-            yes_votes: vec![proposer],
+            yes_votes,
             no_votes: vec![],
         };
         state.proposals.push(proposal);
@@ -293,6 +344,27 @@ fn get_members() -> Vec<Member> {
 
 #[ic_cdk::export::candid::candid_method(query)]
 #[query]
+fn check_invitation_status() -> Option<InvitationStatus> {
+    let caller = caller();
+    STATE.with(|s| {
+        match s.borrow().proposals.iter().rev().find(|p| {
+            p.proposer == caller && matches!(p.proposal_type, ProposalType::JoinRequest(_))
+        }) {
+            None => None,
+            Some(proposal) => match &proposal.proposal_type {
+                ProposalType::JoinRequest(request) => Some(InvitationStatus {
+                    status: proposal.proposal_status.clone(),
+                    name: request.name.clone(),
+                    message: request.message.clone(),
+                }),
+                _ => None,
+            },
+        }
+    })
+}
+
+#[ic_cdk::export::candid::candid_method(query)]
+#[query]
 fn get_canisters() -> Vec<Canister> {
     STATE.with(|s| {
         return s.borrow().canisters.clone();
@@ -371,6 +443,16 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
                 .retain(|m| m.principal_id != *principal);
             return Ok(());
         }),
+        ProposalType::JoinRequest(invitaion_request) => {
+            STATE.with(|s| {
+                s.borrow_mut().members.push(Member {
+                    name: invitaion_request.name.clone(),
+                    description: invitaion_request.message.clone(),
+                    principal_id: proposal.proposer,
+                })
+            });
+            return Ok(());
+        }
         ProposalType::CreateCanister {
             create_args,
             name,

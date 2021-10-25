@@ -2,7 +2,6 @@ identity alice;
 
 let id = call ic.provisional_create_canister_with_cycles(record { settings = null; amount = null });
 let candao = id.canister_id;
-candao;
 let _ = call ic.install_code(
   record {
     arg = encode ();
@@ -19,6 +18,8 @@ let canister_to_link = call ic.provisional_create_canister_with_cycles(record { 
 let _ = call candao.create_proposal(variant {
   LinkCanister = record {
     canister_id = canister_to_link.canister_id;
+    name = "";
+    description = "";
   }
 });
 assert _ == variant { Success };
@@ -26,7 +27,7 @@ assert _ == variant { Success };
 // single member, no additional voting necessary
 
 let _ = call candao.get_canisters();
-assert _ == vec {
+assert _ ~= vec {
   record {
     canister_id = canister_to_link.canister_id;
   };
@@ -37,6 +38,8 @@ assert _ == vec {
 let _ = call candao.create_proposal(variant {
   LinkCanister = record {
     canister_id = canister_to_link.canister_id;
+    name = "";
+    description = "";
   }
 });
 assert _ == variant { CanisterAlreadyAdded };

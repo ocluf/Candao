@@ -114,7 +114,7 @@ const Proposals: NextPage = () => {
                       LinkCanister: {
                         canister_id: Principal.fromText(form.canister_id),
                         description: "",
-                        name: "poop",
+                        name: "!todo",
                       },
                     });
                     setCreating(false);
@@ -136,7 +136,9 @@ const Proposals: NextPage = () => {
                         canister_id: Principal.fromText(form.canister_id),
                         mode: installModeToCandidInstallMode(form.mode),
                         wasm_module: Array.from(
-                          new Uint8Array(await form.wasm_module[0].arrayBuffer())
+                          new Uint8Array(
+                            await form.wasm_module[0].arrayBuffer()
+                          )
                         ),
                         arg: [],
                       },

@@ -1,6 +1,6 @@
 import { useCanisters } from "../hooks/useCanisters";
 import { Canister } from "../declarations/candao/candao.did";
-import { useCanisterStatus } from "../hooks/userCanisterStatus";
+import { useCanisterStatus } from "../hooks/useCanisterStatus";
 import { getCanisterStatusName } from "../utils/proposals";
 import { PlayIcon, StopIcon } from "@heroicons/react/solid";
 import { UploadIcon } from "@heroicons/react/outline";

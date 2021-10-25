@@ -3,7 +3,7 @@ import { useActor } from "../components/ActorProvider";
 
 export function useProposals() {
   const { actor } = useActor();
-  const { isLoading, error, data } = useQuery("proposals", () =>
+  const { isLoading, error, data, refetch } = useQuery("proposals", () =>
     actor.get_proposals()
   );
 
@@ -11,5 +11,6 @@ export function useProposals() {
     proposalsLoading: isLoading,
     proposalsError: error,
     proposals: data,
+    refetchProposals: refetch,
   };
 }

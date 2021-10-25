@@ -2,10 +2,13 @@ import type { NextPage } from "next";
 import { useRouter } from "next/dist/client/router";
 import { useEffect, useState } from "react";
 import { useActor } from "../components/ActorProvider";
+import { Alert } from "../components/Alert";
 import { LoginState, useAuth } from "../components/AuthProvider";
+import { Button } from "../components/Button";
 import { PublicNav } from "../components/PublicNav";
 import { useDaoInfo } from "../hooks/useDaoInfo";
 import { useDaoMembers } from "../hooks/useDaoMembers";
+import Link from "next/link";
 
 enum ViewState {
   Uninitialized,
@@ -187,20 +190,24 @@ const Home: NextPage = () => {
 
             {viewState === ViewState.ClaimedNonMember && (
               <>
-                <p className="text-red-400 my-4">
-                  You are not a member of this DAO.
-                </p>
-                <button
-                  type="button"
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  onClick={() => logout()}
+                <Alert
+                  title="You are not a member of this DAO"
+                  variant="warning"
                 >
-                  Log out
-                </button>
-                <p>
-                  your principal id:{" "}
-                  {authClient?.getIdentity().getPrincipal().toString()}
-                </p>
+                  You can submit an invitation request and the members will let
+                  you know if your request is accepted.
+                </Alert>
+                <div className="mt-8">
+                  <Link href="/invite" passHref>
+                    <Button as="a">Request an invite</Button>
+                  </Link>
+                  <span className="inline-block mx-4 text-sm text-gray-600">
+                    or
+                  </span>
+                  <Button type="button" variant="outline" onClick={logout}>
+                    Log out
+                  </Button>
+                </div>
               </>
             )}
           </>

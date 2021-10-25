@@ -17,4 +17,9 @@ if [ ! -f /usr/local/bin/ic-repl ]; then
   fi
 fi
 
-find . -name \*.test.repl -exec ic-repl {} \;
+set -e
+for f in src/candao/tests/*.test.repl; do 
+  echo
+  echo "==== Run test $f ===="
+  ic-repl -r http://localhost:8000 "$f" || exit
+done
