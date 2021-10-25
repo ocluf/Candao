@@ -57,14 +57,18 @@ const ProposalSummary: React.FC<{
       <>Remove {resolveMemberPrincipalId(members, proposalType.RemoveMember)}</>
     );
   } else if (enumIs(proposalType, "StartCanister")) {
-    return <>Start Canister X</>;
+    return (
+      <>Start Canister {proposalType.StartCanister.canister_id.toString()}</>
+    );
   } else if (enumIs(proposalType, "StopCanister")) {
-    return <>Stop Canister X</>;
+    return (
+      <>Stop Canister {proposalType.StopCanister.canister_id.toString()}</>
+    );
   } else if (enumIs(proposalType, "UpdateCanisterSettings")) {
     return <>Update Canister X Settings</>;
-  } else if (enumIs(proposalType, "DepositCycles")){
+  } else if (enumIs(proposalType, "DepositCycles")) {
     return <>Deposit Cycles</>;
-  } else if (enumIs(proposalType, "UninstallCanister")){
+  } else if (enumIs(proposalType, "UninstallCanister")) {
     return <>Uninstall Canister</>;
   }
 
@@ -72,7 +76,7 @@ const ProposalSummary: React.FC<{
 };
 
 const VoteStatus: React.FC<{
-  yes: number; 
+  yes: number;
   no: number;
   total: number;
 }> = ({ yes, no, total }) => {

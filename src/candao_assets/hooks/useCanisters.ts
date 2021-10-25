@@ -6,7 +6,7 @@ export function useCanisters() {
   const { isLoading, error, data } = useQuery("canisters", () =>
     actor.get_canisters()
   );
-
+  console.log(data);
   return {
     canistersLoading: isLoading,
     canistersError: error,

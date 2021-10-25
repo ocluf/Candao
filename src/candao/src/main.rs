@@ -307,7 +307,10 @@ async fn get_canister_status(canister_id: Principal) -> Option<CanisterStatus> {
     };
     let result = canister_status(arg).await;
     match result {
-        Ok((status,)) => Some(status),
+        Ok((status,)) => {
+            ic_cdk::println!("{:?}", status.clone());
+            Some(status)
+        },
         Err(_) => None,
     }
 }

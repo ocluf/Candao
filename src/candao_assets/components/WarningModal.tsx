@@ -1,31 +1,43 @@
 /* This example requires Tailwind CSS v2.0+ */
-import { Dispatch, Fragment, SetStateAction, useRef, useState } from "react";
+import React, {
+  Dispatch,
+  Fragment,
+  SetStateAction,
+  useRef,
+  useState,
+} from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { ExclamationIcon, XIcon } from "@heroicons/react/outline";
-import { Member } from "../declarations/candao/candao.did";
-import { useActor } from "./ActorProvider";
+import { FiLoader } from "react-icons/fi";
 
-const RemoveMemberModal: React.FC<{
+const WarningModal: React.FC<{
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
-  member: Member;
-}> = ({ open, setOpen, member }) => {
-  const [creatingProposal, setCreatingProposal] = useState(false);
+  title: string;
+  confirmButtonText: string;
+  confirmButtonLoadingText: string;
+  message: JSX.Element;
+  onConfirm: Function;
+}> = ({
+  open,
+  setOpen,
+  title,
+  confirmButtonText,
+  confirmButtonLoadingText,
+  message,
+  onConfirm,
+}) => {
+  const [working, setWorking] = useState(false);
   const cancelButtonRef = useRef(null);
-  const { actor } = useActor();
 
   const createRemoveProposal = async () => {
-    if (creatingProposal) {
+    if (working) {
       return;
     }
-    setCreatingProposal(true);
-    const response = await actor.create_proposal({
-      RemoveMember: member.principal_id,
-    });
-    console.log(response);
-    setCreatingProposal(false);
+    setWorking(true);
+    await onConfirm();
+    setWorking(false);
     setOpen(false);
-    // if proposal is immediately executed move to members page?
   };
 
   return (
@@ -88,14 +100,9 @@ const RemoveMemberModal: React.FC<{
                     as="h3"
                     className="text-lg leading-6 font-medium text-gray-900"
                   >
-                    Remove Member
+                    {title}
                   </Dialog.Title>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500">
-                      This will create a remove member proposal for{" "}
-                      <b>{member.name}</b> Are you sure you want to continue?
-                    </p>
-                  </div>
+                  <div className="mt-2 text-sm text-gray-500">{message}</div>
                 </div>
               </div>
               <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
@@ -104,9 +111,10 @@ const RemoveMemberModal: React.FC<{
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={() => createRemoveProposal()}
                 >
-                  {creatingProposal
-                    ? "Creating Remove Proposal..."
-                    : "Create Remove Proposal"}
+                  {working && (
+                    <FiLoader className="animate-spin mr-3"></FiLoader>
+                  )}
+                  {working ? confirmButtonLoadingText : confirmButtonText}
                 </button>
                 <button
                   type="button"
@@ -124,4 +132,4 @@ const RemoveMemberModal: React.FC<{
   );
 };
 
-export default RemoveMemberModal;
+export default WarningModal;
