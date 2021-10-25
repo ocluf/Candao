@@ -2,7 +2,6 @@ identity alice;
 
 let id = call ic.provisional_create_canister_with_cycles(record { settings = null; amount = null });
 let candao = id.canister_id;
-candao;
 let _ = call ic.install_code(
   record {
     arg = encode ();
@@ -30,7 +29,8 @@ assert _ == variant { Success };
 
 
 // ----------------------------------------------------------------
-// invitation cannot be added for the same principal id twice
+// invitation cannot be added for the same principal id if they
+// have an open invitation request
 
 let _ = call candao.create_proposal(variant 
     {JoinRequest=record {
@@ -39,7 +39,7 @@ let _ = call candao.create_proposal(variant
         principal_id=bob;
         }
     });
-assert _ == variant { MemberAlreadyAdded };
+assert _ == variant { InvitationExists };
 
 
 // ----------------------------------------------------------------
@@ -71,6 +71,17 @@ assert members ~= vec {
   };
 };
 
+// ----------------------------------------------------------------
+// after being rejected the principal_id can submit new requests
+identity bob;
+let _ = call candao.create_proposal(variant 
+    {JoinRequest=record {
+        name="Bob"; 
+        message="Please add me"; 
+        principal_id=bob;
+        }
+    });
+assert _ == variant { Success };
 
 // ----------------------------------------------------------------
 // after successful invitation the member is added to the members
@@ -86,7 +97,7 @@ let _ = call candao.create_proposal(variant
 assert _ == variant { Success };
 
 let proposals = call candao.get_proposals();
-let proposal_id = proposals[1].proposal_id;
+let proposal_id = proposals[2].proposal_id;
 
 identity alice;
 let _ = call candao.vote(proposal_id, variant { Yes });

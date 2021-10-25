@@ -110,6 +110,7 @@ type CreateProposalResponse = variant {
     NoPermission;
     CanisterAlreadyAdded;
     MemberAlreadyAdded;
+    InvitationExists;
 };
 
 type UpdateResponse = variant {

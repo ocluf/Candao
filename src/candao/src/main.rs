@@ -92,6 +92,7 @@ enum CreateProposalResponse {
     NoPermission,
     CanisterAlreadyAdded,
     MemberAlreadyAdded,
+    InvitationExists,
 }
 
 #[derive(CandidType, Deserialize)]
@@ -198,10 +199,12 @@ async fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse 
                 s.borrow()
                     .proposals
                     .iter()
+                    .rev()
                     .find(|m| m.proposer == proposer)
+                    .filter(|p| matches!(p.proposal_status, ProposalStatus::InProgress))
                     .is_some()
             }) {
-                return CreateProposalResponse::MemberAlreadyAdded;
+                return CreateProposalResponse::InvitationExists;
             }
         }
         ProposalType::LinkCanister(ref canister) => {
@@ -344,7 +347,7 @@ fn get_members() -> Vec<Member> {
 fn check_invitation_status() -> Option<InvitationStatus> {
     let caller = caller();
     STATE.with(|s| {
-        match s.borrow().proposals.iter().find(|p| {
+        match s.borrow().proposals.iter().rev().find(|p| {
             p.proposer == caller && matches!(p.proposal_type, ProposalType::JoinRequest(_))
         }) {
             None => None,
