@@ -4,11 +4,41 @@ import { useCanisterStatus } from "../hooks/useCanisterStatus";
 import { getCanisterStatusName } from "../utils/proposals";
 import { PlayIcon, StopIcon } from "@heroicons/react/solid";
 import { UploadIcon } from "@heroicons/react/outline";
+import { useActor } from "./ActorProvider";
+import WarningModal from "./WarningModal";
+import { useState } from "react";
 
 const CanisterCard: React.FC<{ canister: Canister }> = ({ canister }) => {
   const { statusLoading, statusError, canisterStatus } = useCanisterStatus(
     canister.canister_id
   );
+
+  const { actor } = useActor();
+  const [isModalOpen, setModalOpen] = useState(false);
+
+  const stopCanister = async () => {
+    await actor.create_proposal({
+      StopCanister: {
+        canister_id: canister.canister_id,
+      },
+    });
+  };
+
+  const startCanister = async () => {
+    await actor.create_proposal({
+      StartCanister: {
+        canister_id: canister.canister_id,
+      },
+    });
+  };
+
+  const warningMessage = (
+    <p>
+      This will create a stop proposal for canister <b>{canister.name}</b> are
+      you sure you want to continue?
+    </p>
+  );
+
   const statusButton = () => {
     if (statusLoading) {
       return "loading...";
@@ -18,15 +48,34 @@ const CanisterCard: React.FC<{ canister: Canister }> = ({ canister }) => {
       const status = canisterStatus?.[0]?.status;
       if (status && getCanisterStatusName(status) == "Running") {
         return (
-          <div className="flex flex-row text-red-500">
-            <StopIcon className="w-5 mr-2 "></StopIcon> <div>Stop</div>{" "}
-          </div>
+          <>
+            <button
+              className="flex flex-row text-red-500"
+              onClick={() => {
+                setModalOpen(true);
+              }}
+            >
+              <StopIcon className="w-5 mr-2 "></StopIcon> <div>Stop</div>{" "}
+            </button>
+            <WarningModal
+              title="Stop Canister"
+              confirmButtonText="Create Stop Proposal"
+              confirmButtonLoadingText="Creating Stop Proposal..."
+              message={warningMessage}
+              onConfirm={stopCanister}
+              open={isModalOpen}
+              setOpen={setModalOpen}
+            ></WarningModal>
+          </>
         );
       } else if (status && getCanisterStatusName(status) == "Stopped") {
         return (
-          <div className="flex flex-row text-green-500">
+          <button
+            className="flex flex-row text-green-500"
+            onClick={() => startCanister()}
+          >
             <PlayIcon className="w-5 mr-2 "></PlayIcon> <div>Start</div>{" "}
-          </div>
+          </button>
         );
       } else {
         return "Stopping...";

@@ -4,18 +4,35 @@ import PageHeading from "../../../components/PageHeading";
 import MemberForm from "../../../components/MemberForm";
 import { useDaoMembers } from "../../../hooks/useDaoMembers";
 import { useRouter } from "next/dist/client/router";
-import RemoveMemberModal from "../../../components/RemoveMemberModal";
+import WarningModal from "../../../components/WarningModal";
 import { Member } from "../../../declarations/candao/candao.did";
 import { useState } from "react";
+import { useActor } from "../../../components/ActorProvider";
 
 const Members: NextPage = () => {
   const router = useRouter();
+  const { actor } = useActor();
   const urlPrincipal = router.query.principal;
   const { daoMembers, daoMembersError, daoMembersLoading } = useDaoMembers();
   const [open, setOpen] = useState(false);
 
   const member: Member | undefined = daoMembers?.find(
     (members) => members.principal_id.toString() == urlPrincipal
+  );
+
+  const removeMember = async () => {
+    if (member) {
+      await actor.create_proposal({
+        RemoveMember: member.principal_id,
+      });
+    }
+  };
+
+  const warningMessage = (
+    <p>
+      This will create a remove member proposal for <b>{member?.name}</b> Are
+      you sure you want to continue?
+    </p>
   );
 
   if (daoMembersLoading) {
@@ -42,11 +59,15 @@ const Members: NextPage = () => {
   } else {
     return (
       <>
-        <RemoveMemberModal
+        <WarningModal
           open={open}
           setOpen={setOpen}
-          member={member}
-        ></RemoveMemberModal>
+          title="Remove Member"
+          confirmButtonText="Create Remove Proposal"
+          confirmButtonLoadingText="Creating Remove Proposal..."
+          message={warningMessage}
+          onConfirm={removeMember}
+        ></WarningModal>
 
         <div className="h-screen bg-gray-100">
           <Nav current="Members"></Nav>
