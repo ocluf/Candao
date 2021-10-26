@@ -13,7 +13,6 @@ export const Button: React.FC<{
   working?: boolean;
   variant?: Variant;
   color?: Color;
-  as?: "button" | "a";
   href?: string;
   onClick?: MouseEventHandler<HTMLButtonElement> | undefined;
 }> = ({
@@ -22,7 +21,6 @@ export const Button: React.FC<{
   disabled,
   working,
   children,
-  as = "button",
   color = "indigo",
   variant = "primary",
   href,
@@ -59,19 +57,12 @@ export const Button: React.FC<{
     ),
   };
 
-  switch (as) {
-    case "a":
-      return <a href={href} {...commonProps}></a>;
-    case "button":
-      return (
-        <button
-          type={type}
-          onClick={onClick}
-          disabled={disabled || working}
-          {...commonProps}
-        ></button>
-      );
-    default:
-      unreachable(as);
-  }
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled || working}
+      {...commonProps}
+    ></button>
+  );
 };

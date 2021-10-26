@@ -92,10 +92,10 @@ const Claim: NextPage = () => {
             <p className="mt-6 text-base leading-5 font-normal text-gray-600">
               You can now start using your DAO.
             </p>
-            <Link href="/dao" passHref>
-              <Button as="a" className="mt-12">
-                Go to the Dashboard
-              </Button>
+            <Link href="/dao">
+              <a>
+                <Button className="mt-12">Go to the Dashboard</Button>
+              </a>
             </Link>
           </Card>
         )}
