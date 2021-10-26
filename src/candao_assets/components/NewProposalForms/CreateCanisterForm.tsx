@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 
 type Fields = {
   name: string;
-  cycles: bigint;
+  cycles: string;
   description: string;
 };
 
@@ -43,7 +43,6 @@ export const CreateCanisterForm: React.FC<{
             type="text"
             placeholder="Nr of cycles to transfer from the DAO canister (min 1T)"
             {...register("cycles")}
-            autoComplete="name"
             defaultValue={2000000000}
             className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
             required
