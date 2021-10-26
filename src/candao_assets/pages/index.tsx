@@ -198,8 +198,10 @@ const Home: NextPage = () => {
                   you know if your request is accepted.
                 </Alert>
                 <div className="mt-8">
-                  <Link href="/invite" passHref>
-                    <Button as="a">Request an invite</Button>
+                  <Link href="/invite">
+                    <a>
+                      <Button>Request an invite</Button>
+                    </a>
                   </Link>
                   <span className="inline-block mx-4 text-sm text-gray-600">
                     or
