@@ -51,6 +51,7 @@ type ProposalType = variant {
         };
         name: text;
         description: text;
+        cycles: nat64;
     };
     LinkCanister: Canister;
     InstallCanister: record {
@@ -147,5 +148,5 @@ service : {
     "get_canister_status": (principal) -> (opt CanisterStatus);
     "get_proposals": () -> (vec Proposal) query;
     "get_dao_info": () -> (DaoInfo) query;
-    "test": () -> (text);
+    "get_cycle_balance": () -> (nat64) query;
 }

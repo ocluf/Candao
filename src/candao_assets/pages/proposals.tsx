@@ -182,7 +182,7 @@ const Proposals: NextPage = () => {
   const StatusDisplay = (proposal: Proposal) => {
     if (enumIs(proposal.proposal_status, "Failed")) {
       return (
-        <div title={proposal.proposal_status.Failed}>
+        <div className="w-48 truncate" title={proposal.proposal_status.Failed}>
           {proposal.proposal_status.Failed}
         </div>
       );
@@ -303,7 +303,6 @@ const Proposals: NextPage = () => {
                             {StatusDisplay(proposal)}
                           </div>
                         </td>
-
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <VoteInfo
                             onVote={(approve) =>

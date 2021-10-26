@@ -29,10 +29,7 @@ const Proposals: NextPage = () => {
   const [proposalType, setProposalType] =
     useState<KeysOfUnion<ProposalType>>("AddMember");
 
-  // const { daoMembers, daoMembersLoading, daoMembersError } = useDaoMembers();
-  // const { canisters, canistersLoading, canistersError } = useCanisters();
   const { actor } = useActor();
-
   const [creating, setCreating] = useState(false);
   const router = useRouter();
 
@@ -160,6 +157,7 @@ const Proposals: NextPage = () => {
                       CreateCanister: {
                         name: form.name,
                         create_args: { settings: [] },
+                        cycles: BigInt(form.cycles),
                         description: form.description,
                       },
                     });

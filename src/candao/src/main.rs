@@ -44,6 +44,7 @@ enum ProposalType {
         create_args: CreateCanisterArgs,
         name: String,
         description: String,
+        cycles: u64 
     },
     LinkCanister(Canister),
     InstallCanister(CanisterInstallArgs),
@@ -416,6 +417,12 @@ fn get_dao_info() -> DaoInfo {
     })
 }
 
+#[candid::candid_method(query)]
+#[query]
+fn get_cycle_balance() -> u64 {
+    return ic_cdk::api::canister_balance();
+}
+
 async fn check_votes(proposal_id: u64) {
     let proposal = find_proposal(proposal_id);
     if proposal.is_none() {
@@ -451,7 +458,7 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
     match &proposal.proposal_type {
         ProposalType::AddMember(member) => {
             STATE.with(|s| s.borrow_mut().members.push(member.clone()));
-            return Err("this is a test string".to_string());
+            return Ok(());
         }
         ProposalType::RemoveMember(principal) => STATE.with(|s| {
             s.borrow_mut()
@@ -481,8 +488,9 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
             create_args,
             name,
             description,
+            cycles,
         } => {
-            let result = create_canister(create_args.clone()).await;
+            let result = create_canister(create_args.clone(),*cycles).await;
             match result {
                 Ok(canister_id) => {
                     STATE.with(|s| {
