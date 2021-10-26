@@ -1,7 +1,7 @@
 {
   "canisters": {
     "candao": {
-      "build": "cargo build --target wasm32-unknown-unknown --package candao --release",
+      "build": "src/candao/build.sh",
       "candid": "src/candao/src/candao.did",
       "wasm": "target/wasm32-unknown-unknown/release/candao.wasm",
       "type": "custom"
