@@ -12,6 +12,7 @@ const CanisterCard: React.FC<{ canister: Canister }> = ({ canister }) => {
   const { statusLoading, statusError, canisterStatus } = useCanisterStatus(
     canister.canister_id
   );
+
   const { actor } = useActor();
   const [isModalOpen, setModalOpen] = useState(false);
 
@@ -89,10 +90,6 @@ const CanisterCard: React.FC<{ canister: Canister }> = ({ canister }) => {
           <h3 className="text-gray-900 text-sm mx-auto font-medium truncate">
             {canister.name}
           </h3>
-          {
-            //temporary
-          }
-          <h2>{canister.canister_id.toString()}</h2>
         </div>
         <p className="mt-1 flex-grow text-gray-500 w-full h-16 pb-4 break-word text-center text-sm overflow-hidden">
           {canister.description}

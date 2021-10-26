@@ -4,11 +4,11 @@ import { useActor } from "../components/ActorProvider";
 
 export function useCanisterStatus(canisterId: Principal) {
   const { actor } = useActor();
-  console.log(canisterId.toString());
-  const { isLoading, error, data } = useQuery("canister_status", () =>
-    actor.get_canister_status(canisterId)
+  const { isLoading, error, data } = useQuery(
+    "canister_status_" + canisterId.toString(),
+    () => actor.get_canister_status(canisterId)
   );
-  console.log(data);
+
   return {
     statusLoading: isLoading,
     statusError: error,
