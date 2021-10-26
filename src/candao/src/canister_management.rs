@@ -72,8 +72,8 @@ pub struct CanisterStatus {
     cycles: candid::Nat,
 }
 
-pub async fn create_canister(args: CreateCanisterArgs) -> CallResult<(CanisterId,)> {
-    return call(Principal::management_canister(), "create_canister", (args,)).await;
+pub async fn create_canister(args: CreateCanisterArgs, cycles:u64) -> CallResult<(CanisterId,)> {
+    return call_with_payment(Principal::management_canister(), "create_canister", (args,),cycles ).await;
 }
 
 pub async fn update_settings(args: UpdateSettingsArg) -> CallResult<((),)> {

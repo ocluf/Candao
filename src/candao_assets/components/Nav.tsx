@@ -1,10 +1,9 @@
 import { Disclosure } from "@headlessui/react";
 import classNames from "classnames";
-import { useRouter } from "next/dist/client/router";
 import Link from "next/link";
 import React from "react";
 import { FiMenu, FiX } from "react-icons/fi";
-import { useDaoInfo } from "../hooks/useDaoInfo";
+import { useCycleBalance } from "../hooks/useCycleBalance";
 import { LoginState, useAuth } from "./AuthProvider";
 
 type Tab = "Dashboard" | "Members" | "Canisters" | "Proposals";
@@ -22,8 +21,29 @@ export const Nav: React.FC<{ current?: Tab; showMenu?: boolean }> = ({
   showMenu = true,
 }) => {
   const { authState, logout, login } = useAuth();
-  const { daoInfo, daoInfoError, daoInfoLoading } = useDaoInfo();
-  const router = useRouter();
+  const { cycleBalanceLoading, cycleBalanceError, cycleBalance } =
+    useCycleBalance();
+
+  const CycleBalance = () => {
+    let balance;
+    if (cycleBalanceLoading) {
+      balance = "...";
+    } else if (cycleBalanceError) {
+      balance = "error";
+    } else {
+      if (cycleBalance) {
+        balance =
+          (cycleBalance / BigInt("1000000000")).toString() + " T cycles";
+      } else {
+        balance = "error";
+      }
+    }
+    return (
+      <div className="border border-white rounded text-white  py-1 px-2  mr-4">
+        {balance}
+      </div>
+    );
+  };
 
   return (
     <Disclosure as="nav" className="bg-gray-800">
@@ -64,6 +84,7 @@ export const Nav: React.FC<{ current?: Tab; showMenu?: boolean }> = ({
               </div>
               <div className="hidden md:block">
                 <div className="ml-4 flex items-center md:ml-6">
+                  {CycleBalance()}
                   <button
                     type="button"
                     className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-200 bg-transparent hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
