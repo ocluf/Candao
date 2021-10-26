@@ -18,6 +18,7 @@ import {
   getProposalStatusName,
   getProposalTypeName,
   getUserVote,
+  proposalStatusNameMap,
   UserVote,
 } from "../utils/proposals";
 import { unreachable } from "../utils/unreachable";
@@ -40,7 +41,7 @@ const ProposalSummary: React.FC<{
   } else if (enumIs(proposalType, "CreateCanister")) {
     return <>Create and link a new canister</>;
   } else if (enumIs(proposalType, "DeleteCanister")) {
-    // return <>Delete {proposal.DeleteCanister.canister_id}</>
+    //return <>Delete {proposal.DeleteCanister.canister_id}</>;
     return <>Delete a canister</>;
   } else if (enumIs(proposalType, "InstallCanister")) {
     return (
@@ -178,6 +179,32 @@ const Proposals: NextPage = () => {
     {}
   );
 
+  const StatusDisplay = (proposal: Proposal) => {
+    if (enumIs(proposal.proposal_status, "Failed")) {
+      return (
+        <div title={proposal.proposal_status.Failed}>
+          {proposal.proposal_status.Failed}
+        </div>
+      );
+    } else if (enumIs(proposal.proposal_status, "InProgress")) {
+      return (
+        <VoteStatus
+          yes={proposal.yes_votes.length}
+          no={proposal.no_votes.length}
+          total={daoMembers?.length || 0}
+        ></VoteStatus>
+      );
+    } else {
+      return (
+        <VoteStatus
+          yes={proposal.yes_votes.length}
+          no={proposal.no_votes.length}
+          total={proposal.yes_votes.length + proposal.no_votes.length}
+        ></VoteStatus>
+      );
+    }
+  };
+
   const vote = async (proposal_id: bigint, approve: boolean) => {
     setWorking({
       ...working,
@@ -273,31 +300,7 @@ const Proposals: NextPage = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
                           <div className="flex items-center justify-between">
                             {getProposalStatusName(proposal.proposal_status)}
-                            <div className="min-w-[6rem]">
-                              {enumIs(
-                                proposal.proposal_status,
-                                "InProgress"
-                              ) && (
-                                <VoteStatus
-                                  yes={proposal.yes_votes.length}
-                                  no={proposal.no_votes.length}
-                                  total={daoMembers.length}
-                                ></VoteStatus>
-                              )}
-                              {!enumIs(
-                                proposal.proposal_status,
-                                "InProgress"
-                              ) && (
-                                <VoteStatus
-                                  yes={proposal.yes_votes.length}
-                                  no={proposal.no_votes.length}
-                                  total={
-                                    proposal.yes_votes.length +
-                                    proposal.no_votes.length
-                                  }
-                                ></VoteStatus>
-                              )}
-                            </div>
+                            {StatusDisplay(proposal)}
                           </div>
                         </td>
 

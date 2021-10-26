@@ -59,7 +59,7 @@ enum ProposalType {
 enum ProposalStatus {
     InProgress,
     Executed,
-    Failed,
+    Failed(String),
     Rejected,
 }
 
@@ -436,7 +436,7 @@ async fn check_votes(proposal_id: u64) {
         let result = execute(&proposal).await;
         match result {
             Ok(_) => set_proposal_status(proposal_id, ProposalStatus::Executed),
-            Err(_) => set_proposal_status(proposal_id, ProposalStatus::Failed),
+            Err(error_message) => set_proposal_status(proposal_id, ProposalStatus::Failed(error_message)),
         }
     } else {
         let majority_of_no = nr_of_no > nr_of_yes && nr_of_no >= majority;
@@ -451,7 +451,7 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
     match &proposal.proposal_type {
         ProposalType::AddMember(member) => {
             STATE.with(|s| s.borrow_mut().members.push(member.clone()));
-            return Ok(());
+            return Err("this is a test string".to_string());
         }
         ProposalType::RemoveMember(principal) => STATE.with(|s| {
             s.borrow_mut()
@@ -459,16 +459,23 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
                 .retain(|m| m.principal_id != *principal);
             return Ok(());
         }),
-        ProposalType::JoinRequest(invitaion_request) => {
+        ProposalType::JoinRequest(invitation_request) => {
+            let mut result= Ok(());
             STATE.with(|s| {
-                s.borrow_mut().members.push(Member {
-                    name: invitaion_request.name.clone(),
-                    description: invitaion_request.message.clone(),
-                    principal_id: proposal.proposer,
-                    can_vote: true,
-                })
+                match s.try_borrow_mut() {
+                    Ok(mut state) => {
+                        state.members.push(Member {
+                            name: invitation_request.name.clone(),
+                            description: invitation_request.message.clone(),
+                            principal_id: proposal.proposer,
+                            can_vote: true,
+                        });
+
+                    },
+                    Err(e) => result = Err(e.to_string()),
+                }
             });
-            return Ok(());
+            return result;
         }
         ProposalType::CreateCanister {
             create_args,
@@ -508,7 +515,6 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
             match result {
                 Ok(_) => Ok(()),
                 Err((_, error)) => {
-                    ic_cdk::print(error.clone());
                     Err(error)
                 }
             }

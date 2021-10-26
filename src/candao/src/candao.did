@@ -77,7 +77,7 @@ type ProposalStatus = variant {
     InProgress;
     Executed;
     Rejected;
-    Failed;
+    Failed : text;
 };
 
 type Vote = variant {
