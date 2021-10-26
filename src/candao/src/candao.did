@@ -2,6 +2,18 @@ type Member = record {
     principal_id: principal;
     name: text;
     description: text;
+    can_vote: bool;
+};
+
+type InvitationRequest = record {
+    name: text;
+    message: text;
+};
+
+type InvitationStatus = record {
+    status: ProposalStatus;
+    name: text;
+    message: text;
 };
 
 type Canister = record {
@@ -32,6 +44,7 @@ type definite_canister_settings = record {
 type ProposalType = variant {
     AddMember: Member;
     RemoveMember: principal;
+    JoinRequest: InvitationRequest;
     CreateCanister : record {
         create_args: record {
             settings: opt canister_settings;
@@ -97,6 +110,8 @@ type CreateProposalResponse = variant {
     Success;
     NoPermission;
     CanisterAlreadyAdded;
+    MemberAlreadyAdded;
+    InvitationExists;
 };
 
 type UpdateResponse = variant {
@@ -127,6 +142,7 @@ service : {
     "update_dao_info": (DaoInfo) -> (UpdateResponse);
     "vote": (nat64, Vote) -> (VoteResponse);
     "get_members": () -> (vec Member) query;
+    "check_invitation_status": () -> (opt InvitationStatus) query;
     "get_canisters": () -> (vec Canister) query;
     "get_canister_status": (principal) -> (opt CanisterStatus);
     "get_proposals": () -> (vec Proposal) query;

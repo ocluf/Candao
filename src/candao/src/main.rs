@@ -1,3 +1,5 @@
+use candid;
+use candid::{CandidType, Deserialize};
 use canister_management::{
     canister_status, create_canister, delete_canister, deposit_cycles, install_code,
     start_canister, stop_canister, uninstall_code, update_settings, CanisterId,
@@ -5,9 +7,7 @@ use canister_management::{
 };
 use ic_cdk::api::call::CallResult;
 use ic_cdk::api::{caller, time};
-use ic_cdk::export::candid::{CandidType, Deserialize};
 use ic_cdk::export::Principal;
-
 use ic_cdk_macros::{query, update};
 use std::cell::RefCell;
 
@@ -19,12 +19,27 @@ struct Member {
     pub principal_id: Principal,
     pub name: String,
     pub description: String,
+    pub can_vote: bool,
+}
+
+#[derive(Clone, CandidType, Deserialize)]
+struct InvitationRequest {
+    pub name: String,
+    pub message: String,
+}
+
+#[derive(Clone, CandidType, Deserialize)]
+struct InvitationStatus {
+    pub name: String,
+    pub message: String,
+    pub status: ProposalStatus,
 }
 
 #[derive(Clone, CandidType, Deserialize)]
 enum ProposalType {
     AddMember(Member),
     RemoveMember(Principal),
+    JoinRequest(InvitationRequest),
     CreateCanister {
         create_args: CreateCanisterArgs,
         name: String,
@@ -77,6 +92,8 @@ enum CreateProposalResponse {
     Success,
     NoPermission,
     CanisterAlreadyAdded,
+    MemberAlreadyAdded,
+    InvitationExists,
 }
 
 #[derive(CandidType, Deserialize)]
@@ -133,7 +150,7 @@ thread_local! {
     pub static STATE: RefCell<State> = RefCell::default()
 }
 
-#[ic_cdk::export::candid::candid_method]
+#[candid::candid_method]
 #[update]
 fn take_control() -> TakeControlResponse {
     let principal_id = caller();
@@ -147,6 +164,7 @@ fn take_control() -> TakeControlResponse {
             principal_id: principal_id,
             name: "".to_string(),
             description: "".to_string(),
+            can_vote: true,
         };
         add_member(new_member);
         return TakeControlResponse::Success;
@@ -154,14 +172,43 @@ fn take_control() -> TakeControlResponse {
     return TakeControlResponse::AlreadyTaken;
 }
 
-#[ic_cdk::export::candid::candid_method]
+#[candid::candid_method]
 #[update]
 async fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse {
     let proposer = caller();
-    if !is_member(proposer) {
+
+    let is_public_request = match &proposal_type {
+        ProposalType::JoinRequest(_) => true,
+        _ => false,
+    };
+
+    if !is_public_request && !is_member(proposer) {
         return CreateProposalResponse::NoPermission;
     }
+
     match proposal_type {
+        ProposalType::JoinRequest(_) => {
+            if STATE.with(|s| {
+                s.borrow()
+                    .members
+                    .iter()
+                    .find(|m| m.principal_id == proposer)
+                    .is_some()
+            }) {
+                return CreateProposalResponse::MemberAlreadyAdded;
+            }
+            if STATE.with(|s| {
+                s.borrow()
+                    .proposals
+                    .iter()
+                    .rev()
+                    .find(|m| m.proposer == proposer)
+                    .filter(|p| matches!(p.proposal_status, ProposalStatus::InProgress))
+                    .is_some()
+            }) {
+                return CreateProposalResponse::InvitationExists;
+            }
+        }
         ProposalType::LinkCanister(ref canister) => {
             if STATE.with(|s| {
                 s.borrow()
@@ -179,6 +226,19 @@ async fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse 
     let proposal_id = STATE.with(|s| {
         let state = &mut s.borrow_mut();
 
+        let can_proposer_vote = state
+            .members
+            .iter()
+            .find(|m| m.principal_id == proposer)
+            .filter(|m| m.can_vote)
+            .is_some();
+
+        let yes_votes = if is_public_request || !can_proposer_vote {
+            vec![]
+        } else {
+            vec![proposer]
+        };
+
         let next_id = state.proposals.len() as u64;
         let proposal = Proposal {
             proposal_id: next_id,
@@ -186,7 +246,7 @@ async fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse 
             proposal_date: time(),
             proposal_type: proposal_type,
             proposal_status: ProposalStatus::InProgress,
-            yes_votes: vec![proposer],
+            yes_votes,
             no_votes: vec![],
         };
         state.proposals.push(proposal);
@@ -197,7 +257,7 @@ async fn create_proposal(proposal_type: ProposalType) -> CreateProposalResponse 
     return CreateProposalResponse::Success;
 }
 
-#[ic_cdk::export::candid::candid_method]
+#[candid::candid_method]
 #[update]
 async fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
     let voter = caller();
@@ -207,6 +267,10 @@ async fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
         return VoteResponse::NoPermission;
     }
     let member = member.unwrap();
+
+    if !member.can_vote {
+        return VoteResponse::NoPermission;
+    }
 
     let proposal = find_proposal(proposal_id);
     if proposal.is_none() {
@@ -254,7 +318,7 @@ async fn vote(proposal_id: u64, ballot: Vote) -> VoteResponse {
     return VoteResponse::VoteCast;
 }
 
-#[ic_cdk::export::candid::candid_method]
+#[candid::candid_method]
 #[update]
 fn update_member_info(name: String, description: String) -> UpdateResponse {
     let caller = caller();
@@ -272,7 +336,7 @@ fn update_member_info(name: String, description: String) -> UpdateResponse {
     })
 }
 
-#[ic_cdk::export::candid::candid_method]
+#[candid::candid_method]
 #[update]
 fn update_dao_info(dao_info: DaoInfo) -> UpdateResponse {
     let caller = caller();
@@ -283,7 +347,7 @@ fn update_dao_info(dao_info: DaoInfo) -> UpdateResponse {
     return UpdateResponse::NoPermission;
 }
 
-#[ic_cdk::export::candid::candid_method(query)]
+#[candid::candid_method(query)]
 #[query]
 fn get_members() -> Vec<Member> {
     STATE.with(|s| {
@@ -291,7 +355,28 @@ fn get_members() -> Vec<Member> {
     })
 }
 
-#[ic_cdk::export::candid::candid_method(query)]
+#[candid::candid_method(query)]
+#[query]
+fn check_invitation_status() -> Option<InvitationStatus> {
+    let caller = caller();
+    STATE.with(|s| {
+        match s.borrow().proposals.iter().rev().find(|p| {
+            p.proposer == caller && matches!(p.proposal_type, ProposalType::JoinRequest(_))
+        }) {
+            None => None,
+            Some(proposal) => match &proposal.proposal_type {
+                ProposalType::JoinRequest(request) => Some(InvitationStatus {
+                    status: proposal.proposal_status.clone(),
+                    name: request.name.clone(),
+                    message: request.message.clone(),
+                }),
+                _ => None,
+            },
+        }
+    })
+}
+
+#[candid::candid_method(query)]
 #[query]
 fn get_canisters() -> Vec<Canister> {
     STATE.with(|s| {
@@ -299,7 +384,7 @@ fn get_canisters() -> Vec<Canister> {
     })
 }
 
-#[ic_cdk::export::candid::candid_method]
+#[candid::candid_method]
 #[update]
 async fn get_canister_status(canister_id: Principal) -> Option<CanisterStatus> {
     let arg = CanisterId {
@@ -315,7 +400,7 @@ async fn get_canister_status(canister_id: Principal) -> Option<CanisterStatus> {
     }
 }
 
-#[ic_cdk::export::candid::candid_method(query)]
+#[candid::candid_method(query)]
 #[query]
 fn get_proposals() -> Vec<Proposal> {
     STATE.with(|s| {
@@ -323,7 +408,7 @@ fn get_proposals() -> Vec<Proposal> {
     })
 }
 
-#[ic_cdk::export::candid::candid_method(query)]
+#[candid::candid_method(query)]
 #[query]
 fn get_dao_info() -> DaoInfo {
     STATE.with(|s| {
@@ -341,7 +426,7 @@ async fn check_votes(proposal_id: u64) {
         return;
     }
     let total_members = STATE.with(|s| {
-        return s.borrow().members.len();
+        return s.borrow().members.iter().filter(|m| m.can_vote).count();
     });
 
     let majority = total_members / 2 + 1;
@@ -374,6 +459,17 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
                 .retain(|m| m.principal_id != *principal);
             return Ok(());
         }),
+        ProposalType::JoinRequest(invitaion_request) => {
+            STATE.with(|s| {
+                s.borrow_mut().members.push(Member {
+                    name: invitaion_request.name.clone(),
+                    description: invitaion_request.message.clone(),
+                    principal_id: proposal.proposer,
+                    can_vote: true,
+                })
+            });
+            return Ok(());
+        }
         ProposalType::CreateCanister {
             create_args,
             name,
@@ -516,7 +612,7 @@ fn add_member(new_member: Member) {
 
 fn main() {}
 
-ic_cdk::export::candid::export_service!();
+candid::export_service!();
 
 #[ic_cdk_macros::query(name = "__get_candid_interface_tmp_hack")]
 fn export_candid() -> String {

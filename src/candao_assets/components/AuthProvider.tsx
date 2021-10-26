@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
 import { AuthClient } from "@dfinity/auth-client";
-import { useActor } from "./ActorProvider";
-import { createActor } from "../utils/actor";
 import { useRouter } from "next/dist/client/router";
+import React, { useEffect, useState } from "react";
+import { createActor } from "../utils/actor";
+import { useActor } from "./ActorProvider";
 
 export enum LoginState {
   Uninitialized,
@@ -23,7 +23,7 @@ const authContext = React.createContext<{
 });
 
 export const AuthProvider: React.FC = ({ children }) => {
-  const authClientRef = useRef<AuthClient | null>(null);
+  const [authClient, setAuthClient] = useState<AuthClient | null>(null);
   const [loggedIn, setLoggedIn] = useState<LoginState>(
     LoginState.Uninitialized
   );
@@ -33,40 +33,41 @@ export const AuthProvider: React.FC = ({ children }) => {
   useEffect(() => {
     (async () => {
       const authClient = await AuthClient.create();
-      authClientRef.current = authClient;
       if (await authClient.isAuthenticated()) {
-        handleAuth();
+        handleAuth(authClient);
+        setAuthClient(authClient);
       } else {
         setLoggedIn(LoginState.LoggedOut);
+        setAuthClient(authClient);
       }
     })();
   }, []);
 
   const login = (callback?: () => void) => {
-    authClientRef.current?.login({
+    authClient?.login({
       identityProvider:
         process.env.DFX_NETWORK === "ic"
           ? "https://identity.ic0.app/#authorize"
           : `http://${process.env.INTERNET_IDENTITY_CANISTER_ID}.localhost:8000/#authorize`,
       onSuccess: () => {
-        handleAuth();
+        handleAuth(authClient);
         callback && callback();
       },
     });
   };
 
   function logout() {
-    authClientRef.current?.logout();
+    authClient?.logout();
     setLoggedIn(LoginState.LoggedOut);
     router.push("/");
   }
 
-  function handleAuth() {
+  function handleAuth(authClient: AuthClient) {
     setLoggedIn(LoginState.LoggedIn);
     setActor(
       createActor({
         agentOptions: {
-          identity: authClientRef.current?.getIdentity(),
+          identity: authClient?.getIdentity(),
         },
       })
     );
@@ -78,7 +79,7 @@ export const AuthProvider: React.FC = ({ children }) => {
         authState: loggedIn,
         login,
         logout,
-        authClient: authClientRef.current,
+        authClient,
       }}
     >
       {children}

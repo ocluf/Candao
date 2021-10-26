@@ -33,6 +33,8 @@ let canister_to_link = call ic.provisional_create_canister_with_cycles(record { 
 let _ = call candao.create_proposal(variant {
   LinkCanister = record {
     canister_id = canister_to_link.canister_id;
+    name = "";
+    description = "";
   }
 });
 assert _ == variant { Success };
@@ -44,7 +46,8 @@ let _ = call candao.create_proposal(variant {
   InstallCanister = record {
     canister_id = canister_to_link.canister_id;
     mode = variant { install };
-    wasm = file "./wasm/greet.wasm";
+    wasm_module = file "./wasm/greet.wasm";
+    arg = encode ();
   }
 });
 assert _ == variant { Success };
@@ -65,7 +68,8 @@ let _ = call candao.create_proposal(variant {
   InstallCanister = record {
     canister_id = other_canister;
     mode = variant { reinstall };
-    wasm = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+    wasm_module = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+    arg = encode ();
   }
 });
 assert _ == variant { Success };
@@ -83,17 +87,15 @@ let _ = call candao.create_proposal(variant {
   InstallCanister = record {
     canister_id = other_canister;
     mode = variant { upgrade };
-    wasm = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+    wasm_module = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+    arg = encode ();
   }
 });
 assert _ == variant { Success };
 
 let _ = call other_canister.get_members();
-
-assert _ == vec {
+assert _ ~= vec {
   record {
-    name = "";
-    description = "";
     principal_id = alice;
   }
 };

@@ -1,6 +1,10 @@
 import { Principal } from "@dfinity/principal";
 import type { NextPage } from "next";
+import Link from "next/link";
+import { useState } from "react";
+import { useActor } from "../components/ActorProvider";
 import { useAuth } from "../components/AuthProvider";
+import { Button } from "../components/Button";
 import { Nav } from "../components/Nav";
 import PageHeading from "../components/PageHeading";
 import { Canister, Member, Proposal } from "../declarations/candao/candao.did";
@@ -12,14 +16,11 @@ import { resolveMemberPrincipalId, shortenPrincipalId } from "../utils/members";
 import {
   getInstallModeName,
   getProposalStatusName,
-  getProposalSummary,
   getProposalTypeName,
   getUserVote,
-  proposalStatusNameMap,
   UserVote,
 } from "../utils/proposals";
 import { unreachable } from "../utils/unreachable";
-import Link from "next/link";
 
 const ProposalSummary: React.FC<{
   proposal: Proposal;
@@ -70,6 +71,16 @@ const ProposalSummary: React.FC<{
     return <>Deposit Cycles</>;
   } else if (enumIs(proposalType, "UninstallCanister")) {
     return <>Uninstall Canister</>;
+  } else if (enumIs(proposalType, "JoinRequest")) {
+    return (
+      <>
+        Accept join request of <strong>{proposalType.JoinRequest.name}</strong>{" "}
+        as{" "}
+        <span title={proposal.proposer.toString()}>
+          {shortenPrincipalId(proposal.proposer.toString())}
+        </span>
+      </>
+    );
   }
 
   unreachable(proposalType);
@@ -111,7 +122,9 @@ const VoteStatus: React.FC<{
 const VoteInfo: React.FC<{
   proposal: Proposal;
   userPrincipal: Principal;
-}> = ({ proposal, userPrincipal }) => {
+  onVote: (approve: boolean) => void;
+  working: false | "yes" | "no";
+}> = ({ proposal, userPrincipal, onVote, working }) => {
   const vote = getUserVote(proposal, userPrincipal);
 
   switch (vote) {
@@ -123,8 +136,24 @@ const VoteInfo: React.FC<{
       if (enumIs(proposal.proposal_status, "InProgress")) {
         return (
           <div>
-            <button>Vote YES</button>
-            <button>Vote NO</button>
+            <Button
+              variant="primary"
+              color="green"
+              onClick={() => onVote(true)}
+              disabled={working === "no"}
+              working={working === "yes"}
+            >
+              Vote YES
+            </Button>
+            <Button
+              variant="primary"
+              color="red"
+              onClick={() => onVote(false)}
+              disabled={working === "yes"}
+              working={working === "no"}
+            >
+              Vote NO
+            </Button>
           </div>
         );
       } else {
@@ -138,11 +167,26 @@ const VoteInfo: React.FC<{
 };
 
 const Proposals: NextPage = () => {
-  const { proposals, proposalsLoading } = useProposals();
+  const { proposals, proposalsLoading, refetchProposals } = useProposals();
   const { daoMembers, daoMembersLoading } = useDaoMembers();
   const { canisters, canistersLoading } = useCanisters();
 
   const { authClient } = useAuth();
+  const { actor } = useActor();
+
+  const [working, setWorking] = useState<Record<string, "yes" | "no" | false>>(
+    {}
+  );
+
+  const vote = async (proposal_id: bigint, approve: boolean) => {
+    setWorking({
+      ...working,
+      [proposal_id.toString()]: approve ? "yes" : "no",
+    });
+    await actor.vote(proposal_id, approve ? { Yes: null } : { No: null });
+    await refetchProposals();
+    setWorking({ ...working, [proposal_id.toString()]: false });
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -259,10 +303,14 @@ const Proposals: NextPage = () => {
 
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <VoteInfo
+                            onVote={(approve) =>
+                              vote(proposal.proposal_id, approve)
+                            }
                             proposal={proposal}
                             userPrincipal={
                               authClient?.getIdentity().getPrincipal()!
                             }
+                            working={working[proposal.proposal_id.toString()]}
                           ></VoteInfo>
                         </td>
                       </tr>
