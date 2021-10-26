@@ -1,9 +1,11 @@
 import { useForm } from "react-hook-form";
+import { Button } from "../Button";
 
 type Fields = {
   name: string;
   description: string;
   principal: string;
+  canVote: boolean;
 };
 
 export const AddMemberForm: React.FC<{
@@ -64,13 +66,29 @@ export const AddMemberForm: React.FC<{
             Brief description of the new member.
           </p>
         </div>
-        <button
-          type="submit"
-          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:hover:bg-gray-400"
-          disabled={submitting}
-        >
+        <div className="relative flex items-start">
+          <div className="flex items-center h-5">
+            <input
+              aria-describedby="can-vote-description"
+              type="checkbox"
+              className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              {...register("canVote")}
+              defaultChecked
+            />
+          </div>
+          <div className="ml-3 text-sm">
+            <label htmlFor="comments" className="font-medium text-gray-700">
+              Can vote
+            </label>
+            <p id="can-vote-description" className="text-gray-500">
+              Uncheck this box if this member isn&apos;t allowed to vote. This
+              is useful for bot members.
+            </p>
+          </div>
+        </div>
+        <Button type="submit" working={submitting}>
           {submitting ? "Submitting..." : "Submit proposal"}
-        </button>
+        </Button>
       </form>
     </div>
   );

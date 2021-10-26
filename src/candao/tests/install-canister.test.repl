@@ -94,10 +94,8 @@ let _ = call candao.create_proposal(variant {
 assert _ == variant { Success };
 
 let _ = call other_canister.get_members();
-assert _ == vec {
+assert _ ~= vec {
   record {
-    name = "";
-    description = "";
     principal_id = alice;
   }
 };

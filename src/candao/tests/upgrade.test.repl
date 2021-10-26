@@ -21,10 +21,8 @@ let _ = call canister.take_control();
 assert _ == variant { Success };
 
 let _ = call canister.get_members();
-assert _ == vec {
+assert _ ~= vec {
   record {
-    name = "";
-    description = "";
     principal_id = alice;
   }
 };
@@ -55,7 +53,7 @@ let _ = call ic.install_code(
 );
 
 let _ = call canister.get_members();
-assert _ == vec {
+assert _ ~= vec {
   record {
     name = "Alice";
     description = "Alice is not real";

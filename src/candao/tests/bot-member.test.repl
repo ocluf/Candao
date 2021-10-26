@@ -1,0 +1,76 @@
+identity alice;
+
+let id = call ic.provisional_create_canister_with_cycles(record { settings = null; amount = null });
+let candao = id.canister_id;
+candao;
+let _ = call ic.install_code(
+  record {
+    arg = encode ();
+    wasm_module = file "../../../target/wasm32-unknown-unknown/release/candao.wasm";
+    mode = variant { install };
+    canister_id = candao;
+  },
+);
+
+let _ = call candao.take_control();
+assert _ == variant { Success };
+
+identity bot;
+identity alice;
+
+
+let _ = call candao.create_proposal(variant 
+    {AddMember=record {
+        name="erik"; 
+        description="test bot user"; 
+        principal_id=bot;
+        can_vote=false;
+        }
+    });
+assert _ == variant { Success };
+
+let settings = opt record {
+  controllers = opt vec { candao };
+  compute_allocation = null ;
+  memory_allocation = null ;
+  freezing_threshold = null ;
+};
+
+let canister_to_link = call ic.provisional_create_canister_with_cycles(record { settings = null; amount = null });
+
+identity bot;
+
+let _ = call candao.create_proposal(variant {
+  LinkCanister = record {
+    canister_id = canister_to_link.canister_id;
+    name = "";
+    description = "";
+  }
+});
+assert _ == variant { Success };
+
+let proposals = call candao.get_proposals();
+assert proposals[1] ~= record {
+  yes_votes = vec { };
+  proposal_status = variant {
+    InProgress
+  };
+};
+
+let _ = call candao.vote(proposals[1].proposal_id, variant { Yes });
+assert _ == variant { NoPermission };
+
+
+// alice votes and it is enough because bot cant vote
+
+identity alice;
+let _ = call candao.vote(proposals[1].proposal_id, variant { Yes });
+assert _ == variant { VoteCast };
+
+let proposals = call candao.get_proposals();
+assert proposals[1] ~= record {
+  yes_votes = vec { alice };
+  proposal_status = variant {
+    Executed
+  };
+};

@@ -2,6 +2,7 @@ type Member = record {
     principal_id: principal;
     name: text;
     description: text;
+    can_vote: bool;
 };
 
 type InvitationRequest = record {

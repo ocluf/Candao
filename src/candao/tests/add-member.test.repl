@@ -20,11 +20,12 @@ let _ = call canister.take_control();
 assert _ == variant { Success };
 
 let _ = call canister.get_members();
-assert _ == vec {
+assert _ ~= vec {
   record {
     name = "";
     description = "";
     principal_id = alice;
+    can_vote = true;
   }
 };
 
@@ -35,7 +36,8 @@ let _ = call canister.create_proposal(variant
     {AddMember=record {
         name=""; 
         description="asd"; 
-        principal_id=principal "rrkah-fqaaa-aaaaa-aaaaq-cai"
+        principal_id=principal "rrkah-fqaaa-aaaaa-aaaaq-cai";
+        can_vote=true;
         }
     });
 assert _ == variant { NoPermission };
@@ -49,15 +51,16 @@ let _ = call canister.create_proposal(variant
         name="erik"; 
         description="erik is fake"; 
         principal_id=bob;
+        can_vote=true;
         }
     });
 assert _ == variant { Success };
 
 let _  = call canister.get_members();
-
-assert _[0].principal_id == alice;
-assert _[1].name == "erik";
-assert _[1].principal_id == bob;
-
-
-
+assert _[0] ~= record {
+  principal_id = alice;
+};
+assert _[1] ~= record {
+  name = "erik";
+  principal_id = bob;
+};
