@@ -1,13 +1,11 @@
 import { Principal } from "@dfinity/principal";
 import {
   Canister,
-  CanisterStatus,
   Member,
   Proposal,
   ProposalStatus,
   ProposalType,
 } from "../declarations/candao/candao.did";
-import Proposals from "../pages/proposals";
 import { enumIs, KeysOfUnion } from "./enums";
 import { resolveMemberPrincipalId, shortenPrincipalId } from "./members";
 import { unreachable } from "./unreachable";
