@@ -70,7 +70,10 @@ type ProposalType = variant {
         canister_id : principal;
         settings : canister_settings;
     };
-    DepositCycles: CanisterId;
+    DepositCycles: record {
+        canister_id: CanisterId;
+        cycles: nat64;
+    }
 };
 
 

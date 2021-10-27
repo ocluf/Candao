@@ -33,7 +33,7 @@ export const Nav: React.FC<{ current?: Tab; showMenu?: boolean }> = ({
     } else {
       if (cycleBalance) {
         balance =
-          (cycleBalance / BigInt("1000000000")).toString() + " T cycles";
+          (cycleBalance / BigInt("1000000000000")).toString() + " T cycles";
       } else {
         balance = "error";
       }
