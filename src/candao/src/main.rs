@@ -53,7 +53,10 @@ enum ProposalType {
     StartCanister(CanisterId),
     StopCanister(CanisterId),
     UpdateCanisterSettings(UpdateSettingsArg),
-    DepositCycles(CanisterId),
+    DepositCycles {
+        canister_id: CanisterId, 
+        cycles: u64
+    },
 }
 
 #[derive(Clone, CandidType, Deserialize)]
@@ -567,8 +570,8 @@ async fn execute(proposal: &Proposal) -> Result<(), String> {
                 Err((_, error)) => Err(error),
             }
         }
-        ProposalType::DepositCycles(canister_id) => {
-            let result = deposit_cycles(canister_id.clone(), 1000000000).await;
+        ProposalType::DepositCycles{canister_id, cycles} => {
+            let result = deposit_cycles(canister_id.clone(), *cycles).await;
             match result {
                 Ok(_) => Ok(()),
                 Err((_, error)) => Err(error),

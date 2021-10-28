@@ -6,6 +6,7 @@ import { useActor } from "../../components/ActorProvider";
 import { Nav } from "../../components/Nav";
 import { AddMemberForm } from "../../components/NewProposalForms/AddMemberForm";
 import { CreateCanisterForm } from "../../components/NewProposalForms/CreateCanisterForm";
+import { DepositCyclesForm } from "../../components/NewProposalForms/DepositCyclesForm";
 import {
   InstallCanisterForm,
   installModeToCandidInstallMode,
@@ -23,6 +24,7 @@ const enabledProposalTypes: KeysOfUnion<ProposalType>[] = [
   "LinkCanister",
   "InstallCanister",
   "CreateCanister",
+  "DepositCycles",
 ];
 
 const Proposals: NextPage = () => {
@@ -171,6 +173,28 @@ const Proposals: NextPage = () => {
                   }}
                   submitting={creating}
                 ></CreateCanisterForm>
+              )}
+
+              {proposalType === "DepositCycles" && (
+                <DepositCyclesForm
+                  onSubmit={async (form) => {
+                    setCreating(true);
+                    const response = await actor.create_proposal({
+                      DepositCycles: {
+                        canister_id: {
+                          canister_id: Principal.fromText(form.canister_id),
+                        },
+                        cycles: BigInt(form.cycles),
+                      },
+                    });
+                    setCreating(false);
+                    console.log(response);
+                    if (enumIs(response, "Success")) {
+                      router.push("/proposals");
+                    }
+                  }}
+                  submitting={creating}
+                />
               )}
             </div>
           </div>
