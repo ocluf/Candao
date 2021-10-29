@@ -92,39 +92,6 @@ const ProposalSummary: React.FC<{
   unreachable(proposalType);
 };
 
-const VoteStatus: React.FC<{
-  yes: number;
-  no: number;
-  total: number;
-}> = ({ yes, no, total }) => {
-  return (
-    <div className="">
-      <div className="flex justify-between">
-        <span className="text-xs font-medium uppercase text-gray-700">
-          {yes} Yes
-        </span>
-        <span className="text-xs font-medium uppercase text-gray-700">
-          {no} No
-        </span>
-      </div>
-      <div className="relative w-full h-2">
-        <div
-          className="bg-green-700 h-2 left-0 top-0 absolute"
-          style={{
-            width: 100 * (yes / total) + "%",
-          }}
-        ></div>
-        <div
-          className="bg-red-700 h-2 right-0 top-0 absolute"
-          style={{
-            width: 100 * (no / total) + "%",
-          }}
-        ></div>
-      </div>
-    </div>
-  );
-};
-
 const VoteDisplay: React.FC<{
   total: number;
   approved: number;
@@ -294,48 +261,50 @@ const ProposalCard: React.FC<{
   };
 
   return (
-    <Card className="flex shadow sm:rounded-lg">
-      <div className="flex flex-1 flex-col space-y-2 truncate">
-        <h1 className="text-base leading-6 font-bold">
+    <Card className="shadow md:flex sm:rounded-lg">
+      <div className="flex flex-1 flex-col space-y-2 ">
+        <h1 className="text-base leading-6 font-bold truncate">
           {getProposalText()[0]}
         </h1>
-        <p className="text-sm leading-5 font-normal text-gray-500">
+        <p className="text-sm leading-5 font-normal text-gray-500 truncate">
           {getProposalText()[1]}
         </p>
         <p className="text-sm leading-5 font-normal"></p>
       </div>
-      <div className="ml-5">
-        <VoteDisplay
-          total={members.length}
-          approved={proposal.yes_votes.length}
-          rejected={proposal.no_votes.length}
-        />
-      </div>
-      <div className="flex flex-col ml-5 md:ml-8 lg:ml-20 xl:ml-24 w-18 space-y-4">
-        {!votedNo && !votedYes && (
-          <>
-            <Button
-              color="green"
-              disabled={isAnonymous}
-              className="text-xs leading-4 justify-center"
-              onClick={() => actor.vote(proposal.proposal_id, { Yes: null })}
-            >
-              Approve
-            </Button>
-            <Button
-              color="red"
-              disabled={isAnonymous}
-              className="text-xs leading-4 justify-center"
-              onClick={() => actor.vote(proposal.proposal_id, { No: null })}
-            >
-              Reject
-            </Button>
-          </>
-        )}
-        {votedYes && (
-          <Badge text="Voted YES" color="green" className="my-auto"></Badge>
-        )}
-        {votedNo && <Badge text="Voted NO" color="red"></Badge>}
+      <div className="flex mt-4 justify-between">
+        <div className="md:ml-5">
+          <VoteDisplay
+            total={members.length}
+            approved={proposal.yes_votes.length}
+            rejected={proposal.no_votes.length}
+          />
+        </div>
+        <div className="flex flex-col md:ml-8 lg:ml-20 xl:ml-24 w-18 space-y-4">
+          {!votedNo && !votedYes && (
+            <>
+              <Button
+                color="green"
+                disabled={isAnonymous}
+                className="text-xs leading-4 justify-center"
+                onClick={() => actor.vote(proposal.proposal_id, { Yes: null })}
+              >
+                Approve
+              </Button>
+              <Button
+                color="red"
+                disabled={isAnonymous}
+                className="text-xs leading-4 justify-center"
+                onClick={() => actor.vote(proposal.proposal_id, { No: null })}
+              >
+                Reject
+              </Button>
+            </>
+          )}
+          {votedYes && (
+            <Badge text="Voted YES" color="green" className="my-auto"></Badge>
+          )}
+          {votedNo && <Badge text="Voted NO" color="red"></Badge>}
+        </div>
       </div>
     </Card>
   );
@@ -451,32 +420,6 @@ const Proposals: NextPage = () => {
     {}
   );
 
-  const StatusDisplay = (proposal: Proposal) => {
-    if (enumIs(proposal.proposal_status, "Failed")) {
-      return (
-        <div className="w-48 truncate" title={proposal.proposal_status.Failed}>
-          {proposal.proposal_status.Failed}
-        </div>
-      );
-    } else if (enumIs(proposal.proposal_status, "InProgress")) {
-      return (
-        <VoteStatus
-          yes={proposal.yes_votes.length}
-          no={proposal.no_votes.length}
-          total={daoMembers?.length || 0}
-        ></VoteStatus>
-      );
-    } else {
-      return (
-        <VoteStatus
-          yes={proposal.yes_votes.length}
-          no={proposal.no_votes.length}
-          total={proposal.yes_votes.length + proposal.no_votes.length}
-        ></VoteStatus>
-      );
-    }
-  };
-
   const vote = async (proposal_id: bigint, approve: boolean) => {
     setWorking({
       ...working,
@@ -511,6 +454,7 @@ const Proposals: NextPage = () => {
             name="current-tab"
             className="block w-full pl-3 pr-10 py-2 text-base border-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
             defaultValue={currentTab}
+            onChange={(e) => setCurrentTab(e.target.value as Tab)}
           >
             {tabs.map((tab) => (
               <option key={tab.name}>{tab.name}</option>
@@ -520,33 +464,31 @@ const Proposals: NextPage = () => {
         <div className="hidden sm:block">
           <nav className="-mb-px px-6 lg:px-8 max-w-7xl  mx-auto flex space-x-8">
             {tabs.map((tab) => (
-              <>
-                <a
-                  key={tab.name}
-                  href={tab.href}
-                  onClick={() => setCurrentTab(tab.name)}
-                  className={classNames(
-                    tab.name === currentTab
-                      ? "border-indigo-500 text-indigo-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300",
-                    "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm"
-                  )}
-                  aria-current={tab.name === currentTab ? "page" : undefined}
-                >
-                  {tab.name}
-                  {tab.name !== "All proposals" && (
-                    <Badge
-                      color="indigo"
-                      text={
-                        (tab.name === "Canister updates"
-                          ? canisterFilteredProposals?.length.toString()
-                          : memberFilteredProposals?.length.toString()) || ""
-                      }
-                      className={"ml-3"}
-                    ></Badge>
-                  )}
-                </a>
-              </>
+              <a
+                key={tab.name}
+                href={tab.href}
+                onClick={() => setCurrentTab(tab.name)}
+                className={classNames(
+                  tab.name === currentTab
+                    ? "border-indigo-500 text-indigo-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300",
+                  "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex"
+                )}
+                aria-current={tab.name === currentTab ? "page" : undefined}
+              >
+                {tab.name}
+                {tab.name !== "All proposals" && (
+                  <Badge
+                    color="indigo"
+                    text={
+                      (tab.name === "Canister updates"
+                        ? canisterFilteredProposals?.length.toString()
+                        : memberFilteredProposals?.length.toString()) || ""
+                    }
+                    className={"ml-3"}
+                  ></Badge>
+                )}
+              </a>
             ))}
           </nav>
         </div>
@@ -568,7 +510,7 @@ const Proposals: NextPage = () => {
               ></ProposalCard>
             ))}
         </div>
-        <h1 className="text-2xl leading-9 font-medium mt-16 mb-4 ">
+        <h1 className="text-2xl leading-9 font-medium mt-8 md:mt-16 mb-4 ">
           Executed Proposals
         </h1>
         {proposals &&
@@ -577,8 +519,8 @@ const Proposals: NextPage = () => {
           !daoMembersLoading &&
           canisters &&
           !canistersLoading && (
-            <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200">
+            <div className="shadow overflow-x-scroll	 border-b border-gray-200 sm:rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200 ">
                 <thead className="bg-gray-50">
                   <tr>
                     <th
