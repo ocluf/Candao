@@ -1,7 +1,6 @@
 import classNames from "classnames";
 import { ButtonHTMLAttributes, MouseEventHandler } from "react";
 import { FiLoader } from "react-icons/fi";
-import { unreachable } from "../utils/unreachable";
 
 type Variant = "outline" | "primary";
 type Color = "indigo" | "green" | "red";
@@ -29,10 +28,10 @@ export const Button: React.FC<{
   const classes: Record<Variant, Record<Color, string>> = {
     primary: {
       indigo:
-        "border-transparent text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 disabled:bg-gray-400 disabled:hover:bg-gray-400",
+        "border-transparent text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:pointer-events-none",
       green:
-        "border-transparent text-white bg-green-600 hover:bg-green-700 focus:ring-green-500 disabled:bg-gray-400 disabled:hover:bg-gray-400",
-      red: "border-transparent text-white bg-red-600 hover:bg-red-700 focus:ring-red-500 disabled:bg-gray-400 disabled:hover:bg-gray-400",
+        "border-transparent text-white bg-green-600 hover:bg-green-700 focus:ring-green-500 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:pointer-events-none",
+      red: "border-transparent text-white bg-red-600 hover:bg-red-700 focus:ring-red-500 disabled:bg-gray-400 disabled:hover:bg-gray-400 disabled:pointer-events-none",
     },
     outline: {
       indigo:
