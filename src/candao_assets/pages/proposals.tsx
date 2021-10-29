@@ -137,8 +137,10 @@ const VoteDisplay: React.FC<{
       );
     }
   };
-  const approvedPerc: string = (100 * (approved / total)).toFixed(1) + "%";
-  const rejectedPerc: string = (100 * (rejected / total)).toFixed(1) + "%";
+  const approvedPerc: string =
+    parseFloat((100 * (approved / total)).toFixed(1)) + "%";
+  const rejectedPerc: string =
+    parseFloat((100 * (rejected / total)).toFixed(1)) + "%";
 
   return (
     <div>
@@ -177,8 +179,16 @@ const ProposalCard: React.FC<{
   proposal: Proposal;
   members: Array<Member>;
   canisters: Array<Canister>;
-}> = ({ proposal, members, canisters }) => {
+  currentUserPrincipal: Principal;
+}> = ({ proposal, members, canisters, currentUserPrincipal }) => {
   const { actor } = useActor();
+  const isAnonymous: boolean = currentUserPrincipal.isAnonymous();
+  const votedNo = proposal.no_votes.find(
+    (p) => p.toString() === currentUserPrincipal.toString()
+  );
+  const votedYes = proposal.yes_votes.find(
+    (p) => p.toString() === currentUserPrincipal.toString()
+  );
 
   const getProposalText = (): [title: string, subtitle: string] => {
     if (enumIs(proposal.proposal_type, "AddMember")) {
@@ -202,6 +212,7 @@ const ProposalCard: React.FC<{
           proposal.proposal_type.CreateCanister.cycles / BigInt("1000000000000")
         ).toString() +
         " T cycles";
+      console.log(proposal.proposal_id);
       return [title, subtitle];
     } else if (enumIs(proposal.proposal_type, "DeleteCanister")) {
       const relevantCanisterId =
@@ -300,20 +311,28 @@ const ProposalCard: React.FC<{
         />
       </div>
       <div className="flex flex-col ml-5 md:ml-8 lg:ml-20 xl:ml-24 w-18 space-y-4">
-        <Button
-          color="green"
-          className="text-xs leading-4 justify-center"
-          onClick={() => actor.vote(proposal.proposal_id, { Yes: null })}
-        >
-          Approve
-        </Button>
-        <Button
-          color="red"
-          className="text-xs leading-4 justify-center"
-          onClick={() => actor.vote(proposal.proposal_id, { No: null })}
-        >
-          Reject
-        </Button>
+        {!votedNo && !votedYes && (
+          <>
+            <Button
+              color="green"
+              disabled={isAnonymous}
+              className="text-xs leading-4 justify-center"
+              onClick={() => actor.vote(proposal.proposal_id, { Yes: null })}
+            >
+              Approve
+            </Button>
+            <Button
+              color="red"
+              disabled={isAnonymous}
+              className="text-xs leading-4 justify-center"
+              onClick={() => actor.vote(proposal.proposal_id, { No: null })}
+            >
+              Reject
+            </Button>
+          </>
+        )}
+        {votedYes && <div>Voted YES</div>}
+        {votedNo && <div>Voted No</div>}
       </div>
     </Card>
   );
@@ -438,11 +457,14 @@ const Proposals: NextPage = () => {
           {InProgressProposals &&
             daoMembers &&
             canisters &&
+            authClient &&
             InProgressProposals.map((proposal) => (
               <ProposalCard
+                key={proposal.proposal_id.toString()}
                 proposal={proposal}
                 members={daoMembers}
                 canisters={canisters}
+                currentUserPrincipal={authClient.getIdentity().getPrincipal()}
               ></ProposalCard>
             ))}
         </div>

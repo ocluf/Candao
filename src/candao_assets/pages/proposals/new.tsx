@@ -130,8 +130,8 @@ const Proposals: NextPage = () => {
                       const response = await actor.create_proposal({
                         LinkCanister: {
                           canister_id: Principal.fromText(form.canister_id),
-                          description: "",
-                          name: "!todo",
+                          name: form.name,
+                          description: form.description,
                         },
                       });
                       setCreating(false);
