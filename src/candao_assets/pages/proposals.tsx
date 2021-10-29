@@ -1,10 +1,13 @@
+import { Actor } from "@dfinity/agent";
 import { Principal } from "@dfinity/principal";
 import type { NextPage } from "next";
+import app from "next/app";
 import Link from "next/link";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useActor } from "../components/ActorProvider";
 import { useAuth } from "../components/AuthProvider";
 import { Button } from "../components/Button";
+import { Card } from "../components/Card";
 import { Nav } from "../components/Nav";
 import PageHeading from "../components/PageHeading";
 import { Canister, Member, Proposal } from "../declarations/candao/candao.did";
@@ -120,6 +123,202 @@ const VoteStatus: React.FC<{
   );
 };
 
+const VoteDisplay: React.FC<{
+  total: number;
+  approved: number;
+  rejected: number;
+}> = ({ total, approved, rejected }) => {
+  const title = () => {
+    if (approved == 0 && rejected == 0) {
+      return <div>No votes yet</div>;
+    } else {
+      return (
+        <div>{approved + rejected + " / " + total} &nbsp; People voted</div>
+      );
+    }
+  };
+  const approvedPerc: string = (100 * (approved / total)).toFixed(1) + "%";
+  const rejectedPerc: string = (100 * (rejected / total)).toFixed(1) + "%";
+
+  return (
+    <div>
+      <div className="text-sm leading-5 font-normal text-gray-900 mb-1">
+        {title()}
+      </div>
+      <div className="flex text-xs mt-2">
+        <div className="w-12">{approvedPerc}</div>
+        <div className="w-20">
+          <div className="text-gray-500">Approved</div>
+          <div
+            className="bg-purple-700 h-1 my-1 rounded-lg"
+            style={{
+              width: 100 * (approved / total) + "%",
+            }}
+          ></div>
+        </div>
+      </div>
+      <div className="flex text-xs">
+        <div className="w-12">{rejectedPerc}</div>
+        <div className="w-20">
+          <div className="text-gray-500 ">Rejected</div>
+          <div
+            className="bg-purple-700 h-1 my-1 rounded-lg"
+            style={{
+              width: 100 * (rejected / total) + "%",
+            }}
+          ></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProposalCard: React.FC<{
+  proposal: Proposal;
+  members: Array<Member>;
+  canisters: Array<Canister>;
+}> = ({ proposal, members, canisters }) => {
+  const { actor } = useActor();
+
+  const getProposalText = (): [title: string, subtitle: string] => {
+    if (enumIs(proposal.proposal_type, "AddMember")) {
+      const title = "Add new Member - " + proposal.proposal_type.AddMember.name;
+      const subtitle = proposal.proposal_type.AddMember.principal_id.toString();
+      return [title, subtitle];
+    } else if (enumIs(proposal.proposal_type, "RemoveMember")) {
+      const proposalPrincipal = proposal.proposal_type.RemoveMember.toString();
+      const removedMember = members.find(
+        (m) => m.principal_id.toString() === proposalPrincipal
+      );
+      const title = "Remove Member - " + removedMember?.name;
+      const subtitle = removedMember?.principal_id.toString();
+      return [title, subtitle || ""];
+    } else if (enumIs(proposal.proposal_type, "CreateCanister")) {
+      const title =
+        "Create Canister - " + proposal.proposal_type.CreateCanister.name;
+      const subtitle =
+        "Balance: " +
+        (
+          proposal.proposal_type.CreateCanister.cycles / BigInt("1000000000000")
+        ).toString() +
+        " T cycles";
+      return [title, subtitle];
+    } else if (enumIs(proposal.proposal_type, "DeleteCanister")) {
+      const relevantCanisterId =
+        proposal.proposal_type.DeleteCanister.canister_id;
+      const relevantCanister = canisters.find(
+        (c) => c.canister_id === relevantCanisterId
+      );
+      const title = "Delete Canister - " + relevantCanister?.name;
+      const subtitle =
+        proposal.proposal_type.DeleteCanister.canister_id.toString();
+      return [title, subtitle];
+    } else if (enumIs(proposal.proposal_type, "InstallCanister")) {
+      const relevantCanisterId =
+        proposal.proposal_type.InstallCanister.canister_id;
+      const relevantCanister = canisters.find(
+        (c) => c.canister_id === relevantCanisterId
+      );
+      const mode = getInstallModeName(
+        proposal.proposal_type.InstallCanister.mode
+      );
+      const title = `${relevantCanister?.name}: Install new canister (mode: ${mode})`;
+      const subtitle = relevantCanisterId.toString();
+      return [title, subtitle];
+    } else if (enumIs(proposal.proposal_type, "StartCanister")) {
+      const relevantCanisterId =
+        proposal.proposal_type.StartCanister.canister_id;
+      const relevantCanister = canisters.find(
+        (c) => c.canister_id === relevantCanisterId
+      );
+      const title = "Start canister - " + relevantCanister?.name;
+      const subtitle = relevantCanisterId.toString();
+      return [title, subtitle];
+    } else if (enumIs(proposal.proposal_type, "StopCanister")) {
+      const relevantCanisterId =
+        proposal.proposal_type.StopCanister.canister_id;
+      const relevantCanister = canisters.find(
+        (c) => c.canister_id === relevantCanisterId
+      );
+      const title = "Stop canister - " + relevantCanister?.name;
+      const subtitle = relevantCanisterId.toString();
+      return [title, subtitle];
+    } else if (enumIs(proposal.proposal_type, "DepositCycles")) {
+      const relevantCanisterId =
+        proposal.proposal_type.DepositCycles.canister_id.canister_id;
+      const relevantCanister = canisters.find(
+        (c) => c.canister_id === relevantCanisterId
+      );
+      const cyclesT =
+        proposal.proposal_type.DepositCycles.cycles / BigInt("1000000000000");
+      const title = `${relevantCanister?.name}: Deposit Cycles (${cyclesT} T) `;
+      const subtitle = relevantCanister?.canister_id.toString();
+      return [title, subtitle || ""];
+    } else if (enumIs(proposal.proposal_type, "LinkCanister")) {
+      const title =
+        "Link Canister: " + proposal.proposal_type.LinkCanister.name;
+      const subtitle =
+        proposal.proposal_type.LinkCanister.canister_id.toString();
+      return [title, subtitle];
+    } else if (enumIs(proposal.proposal_type, "UninstallCanister")) {
+      const relevantCanisterId =
+        proposal.proposal_type.UninstallCanister.canister_id;
+      const relevantCanister = canisters.find(
+        (c) => c.canister_id === relevantCanisterId
+      );
+      const title = `${relevantCanister?.name}: Uninstall canister `;
+      const subtitle = relevantCanisterId.toString();
+      return [title, subtitle];
+    } else if (enumIs(proposal.proposal_type, "JoinRequest")) {
+      const title =
+        "Join request from " + proposal.proposal_type.JoinRequest.name;
+      const subtitle = proposal.proposer.toString();
+      return [title, subtitle];
+    } else if (enumIs(proposal.proposal_type, "UpdateCanisterSettings")) {
+      return ["TODO", "TODO"];
+    } else {
+      unreachable(proposal.proposal_type);
+    }
+  };
+
+  return (
+    <Card className="flex">
+      <div className="flex flex-1 flex-col space-y-2">
+        <h1 className="text-base leading-6 font-bold">
+          {getProposalText()[0]}
+        </h1>
+        <p className="text-sm leading-5 font-normal text-gray-500">
+          {getProposalText()[1]}
+        </p>
+        <p className="text-sm leading-5 font-normal"></p>
+      </div>
+      <div className="ml-5">
+        <VoteDisplay
+          total={members.length}
+          approved={proposal.yes_votes.length}
+          rejected={proposal.no_votes.length}
+        />
+      </div>
+      <div className="flex flex-col ml-5 md:ml-8 lg:ml-20 xl:ml-24 w-18 space-y-4">
+        <Button
+          color="green"
+          className="text-xs leading-4 justify-center"
+          onClick={() => actor.vote(proposal.proposal_id, { Yes: null })}
+        >
+          Approve
+        </Button>
+        <Button
+          color="red"
+          className="text-xs leading-4 justify-center"
+          onClick={() => actor.vote(proposal.proposal_id, { No: null })}
+        >
+          Reject
+        </Button>
+      </div>
+    </Card>
+  );
+};
+
 const VoteInfo: React.FC<{
   proposal: Proposal;
   userPrincipal: Principal;
@@ -171,6 +370,14 @@ const Proposals: NextPage = () => {
   const { proposals, proposalsLoading, refetchProposals } = useProposals();
   const { daoMembers, daoMembersLoading } = useDaoMembers();
   const { canisters, canistersLoading } = useCanisters();
+
+  const InProgressProposals = proposals?.filter((p) =>
+    enumIs(p.proposal_status, "InProgress")
+  );
+
+  const otherProposals = proposals?.filter(
+    (p) => !enumIs(p.proposal_status, "InProgress")
+  );
 
   const { authClient } = useAuth();
   const { actor } = useActor();
@@ -227,13 +434,26 @@ const Proposals: NextPage = () => {
       </PageHeading>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col space-y-4">
+          {InProgressProposals &&
+            daoMembers &&
+            canisters &&
+            InProgressProposals.map((proposal) => (
+              <ProposalCard
+                proposal={proposal}
+                members={daoMembers}
+                canisters={canisters}
+              ></ProposalCard>
+            ))}
+        </div>
+
         {proposals &&
           !proposalsLoading &&
           daoMembers &&
           !daoMembersLoading &&
           canisters &&
           !canistersLoading && (
-            <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+            <div className="mt-6 shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -270,53 +490,54 @@ const Proposals: NextPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {proposals
-                    .slice()
-                    .reverse()
-                    .map((proposal, personIdx) => (
-                      <tr
-                        key={proposal.proposal_id.toString()}
-                        className={
-                          personIdx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                        }
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {getProposalTypeName(proposal.proposal_type)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <ProposalSummary
-                            proposal={proposal}
-                            members={daoMembers}
-                            canisters={canisters}
-                          ></ProposalSummary>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {resolveMemberPrincipalId(
-                            daoMembers,
-                            proposal.proposer
-                          )}
-                        </td>
+                  {otherProposals &&
+                    otherProposals
+                      .slice()
+                      .reverse()
+                      .map((proposal, personIdx) => (
+                        <tr
+                          key={proposal.proposal_id.toString()}
+                          className={
+                            personIdx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                          }
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {getProposalTypeName(proposal.proposal_type)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <ProposalSummary
+                              proposal={proposal}
+                              members={daoMembers}
+                              canisters={canisters}
+                            ></ProposalSummary>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {resolveMemberPrincipalId(
+                              daoMembers,
+                              proposal.proposer
+                            )}
+                          </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                          <div className="flex items-center justify-between">
-                            {getProposalStatusName(proposal.proposal_status)}
-                            {StatusDisplay(proposal)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <VoteInfo
-                            onVote={(approve) =>
-                              vote(proposal.proposal_id, approve)
-                            }
-                            proposal={proposal}
-                            userPrincipal={
-                              authClient?.getIdentity().getPrincipal()!
-                            }
-                            working={working[proposal.proposal_id.toString()]}
-                          ></VoteInfo>
-                        </td>
-                      </tr>
-                    ))}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                            <div className="flex items-center justify-between">
+                              {getProposalStatusName(proposal.proposal_status)}
+                              {StatusDisplay(proposal)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <VoteInfo
+                              onVote={(approve) =>
+                                vote(proposal.proposal_id, approve)
+                              }
+                              proposal={proposal}
+                              userPrincipal={
+                                authClient?.getIdentity().getPrincipal()!
+                              }
+                              working={working[proposal.proposal_id.toString()]}
+                            ></VoteInfo>
+                          </td>
+                        </tr>
+                      ))}
                 </tbody>
               </table>
             </div>
