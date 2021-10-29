@@ -3,6 +3,7 @@ import { Principal } from "@dfinity/principal";
 import type { NextPage } from "next";
 import app from "next/app";
 import Link from "next/link";
+import classNames from "classnames";
 import React, { useState } from "react";
 import { useActor } from "../components/ActorProvider";
 import { useAuth } from "../components/AuthProvider";
@@ -25,6 +26,7 @@ import {
   UserVote,
 } from "../utils/proposals";
 import { unreachable } from "../utils/unreachable";
+import { Badge } from "../components/Badge";
 
 const ProposalSummary: React.FC<{
   proposal: Proposal;
@@ -212,7 +214,6 @@ const ProposalCard: React.FC<{
           proposal.proposal_type.CreateCanister.cycles / BigInt("1000000000000")
         ).toString() +
         " T cycles";
-      console.log(proposal.proposal_id);
       return [title, subtitle];
     } else if (enumIs(proposal.proposal_type, "DeleteCanister")) {
       const relevantCanisterId =
@@ -331,8 +332,10 @@ const ProposalCard: React.FC<{
             </Button>
           </>
         )}
-        {votedYes && <div>Voted YES</div>}
-        {votedNo && <div>Voted No</div>}
+        {votedYes && (
+          <Badge text="Voted YES" color="green" className="my-auto"></Badge>
+        )}
+        {votedNo && <Badge text="Voted NO" color="red"></Badge>}
       </div>
     </Card>
   );
@@ -348,9 +351,17 @@ const VoteInfo: React.FC<{
 
   switch (vote) {
     case UserVote.No:
-      return <div>Voted NO</div>;
+      return (
+        <div className="flex items-center justify-between">
+          <Badge text="Rejected by you" color="red"></Badge>
+        </div>
+      );
     case UserVote.Yes:
-      return <div>Voted YES</div>;
+      return (
+        <div className="flex items-center justify-between">
+          <Badge text="Approved by you" color="green"></Badge>
+        </div>
+      );
     case UserVote.NotVoted:
       if (enumIs(proposal.proposal_status, "InProgress")) {
         return (
@@ -389,12 +400,47 @@ const Proposals: NextPage = () => {
   const { proposals, proposalsLoading, refetchProposals } = useProposals();
   const { daoMembers, daoMembersLoading } = useDaoMembers();
   const { canisters, canistersLoading } = useCanisters();
+  const [currentTab, setCurrentTab] = useState<Tab>("All proposals");
 
-  const InProgressProposals = proposals?.filter((p) =>
+  type Tab = "All proposals" | "Canister updates" | "Members";
+  const tabs: Array<{ name: Tab; href: string }> = [
+    { name: "All proposals", href: "#" },
+    { name: "Canister updates", href: "#" },
+    { name: "Members", href: "#" },
+  ];
+
+  const filterProposals = (filter: Tab) => {
+    if (filter === "All proposals") {
+      return proposals;
+    } else if (filter === "Members") {
+      return proposals?.filter(
+        (p) =>
+          enumIs(p.proposal_type, "AddMember") ||
+          enumIs(p.proposal_type, "RemoveMember") ||
+          enumIs(p.proposal_type, "JoinRequest")
+      );
+    } else if (filter === "Canister updates") {
+      return proposals?.filter(
+        (p) =>
+          !(
+            enumIs(p.proposal_type, "AddMember") ||
+            enumIs(p.proposal_type, "RemoveMember") ||
+            enumIs(p.proposal_type, "JoinRequest")
+          )
+      );
+    }
+    unreachable(filter);
+  };
+
+  const memberFilteredProposals = filterProposals("Members");
+  const canisterFilteredProposals = filterProposals("Canister updates");
+  const currentProposals = filterProposals(currentTab);
+
+  const InProgressProposals = currentProposals?.filter((p) =>
     enumIs(p.proposal_status, "InProgress")
   );
 
-  const otherProposals = proposals?.filter(
+  const otherProposals = currentProposals?.filter(
     (p) => !enumIs(p.proposal_status, "InProgress")
   );
 
@@ -444,13 +490,67 @@ const Proposals: NextPage = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <Nav current="Proposals"></Nav>
-      <PageHeading crumbs={["Dashboard", "Proposals"]} pageTitle="Proposals">
+      <PageHeading
+        crumbs={["Dashboard", "Proposals"]}
+        pageTitle="Proposals"
+        className="drop-shadow-none"
+      >
         <Link href="/proposals/new">
           <a className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ">
             New Proposal
           </a>
         </Link>
       </PageHeading>
+      <div className=" bg-white ">
+        <div className="sm:hidden">
+          <label htmlFor="current-tab" className="sr-only">
+            Select a tab
+          </label>
+          <select
+            id="current-tab"
+            name="current-tab"
+            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            defaultValue={currentTab}
+          >
+            {tabs.map((tab) => (
+              <option key={tab.name}>{tab.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="hidden sm:block">
+          <nav className="-mb-px px-6 lg:px-8 max-w-7xl  mx-auto flex space-x-8">
+            {tabs.map((tab) => (
+              <>
+                <a
+                  key={tab.name}
+                  href={tab.href}
+                  onClick={() => setCurrentTab(tab.name)}
+                  className={classNames(
+                    tab.name === currentTab
+                      ? "border-indigo-500 text-indigo-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300",
+                    "whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm"
+                  )}
+                  aria-current={tab.name === currentTab ? "page" : undefined}
+                >
+                  {tab.name}
+                  {tab.name !== "All proposals" && (
+                    <Badge
+                      color="indigo"
+                      text={
+                        (tab.name === "Canister updates"
+                          ? canisterFilteredProposals?.length.toString()
+                          : memberFilteredProposals?.length.toString()) || ""
+                      }
+                      className={"ml-3"}
+                    ></Badge>
+                  )}
+                </a>
+              </>
+            ))}
+          </nav>
+        </div>
+      </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col space-y-4">
@@ -468,17 +568,25 @@ const Proposals: NextPage = () => {
               ></ProposalCard>
             ))}
         </div>
-
+        <h1 className="text-2xl leading-9 font-medium mt-16 mb-4 ">
+          Executed Proposals
+        </h1>
         {proposals &&
           !proposalsLoading &&
           daoMembers &&
           !daoMembersLoading &&
           canisters &&
           !canistersLoading && (
-            <div className="mt-6 shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+            <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      DATETIME
+                    </th>
                     <th
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -523,6 +631,11 @@ const Proposals: NextPage = () => {
                             personIdx % 2 === 0 ? "bg-white" : "bg-gray-50"
                           }
                         >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
+                            {new Date(
+                              Number(proposal.proposal_date) / 1_000_000
+                            ).toLocaleDateString()}
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {getProposalTypeName(proposal.proposal_type)}
                           </td>
@@ -542,8 +655,20 @@ const Proposals: NextPage = () => {
 
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
                             <div className="flex items-center justify-between">
-                              {getProposalStatusName(proposal.proposal_status)}
-                              {StatusDisplay(proposal)}
+                              {
+                                <Badge
+                                  text={getProposalStatusName(
+                                    proposal.proposal_status
+                                  )}
+                                  color={
+                                    getProposalStatusName(
+                                      proposal.proposal_status
+                                    ) === "Executed"
+                                      ? "blue"
+                                      : "red"
+                                  }
+                                ></Badge>
+                              }
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

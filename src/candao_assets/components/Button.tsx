@@ -1,7 +1,6 @@
 import classNames from "classnames";
 import { ButtonHTMLAttributes, MouseEventHandler } from "react";
 import { FiLoader } from "react-icons/fi";
-import { unreachable } from "../utils/unreachable";
 
 type Variant = "outline" | "primary";
 type Color = "indigo" | "green" | "red";
