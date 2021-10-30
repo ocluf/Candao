@@ -1,6 +1,6 @@
 import classNames from "classnames";
 
-type Color = "red" | "green" | "indigo" | "blue";
+type Color = "red" | "green" | "indigo" | "blue" | "gray";
 
 export const Badge: React.FC<{
   text: string;
@@ -43,6 +43,16 @@ export const Badge: React.FC<{
         <span
           className={
             "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 " +
+            className
+          }
+        >
+          {text}
+        </span>
+      )}
+      {color === "gray" && (
+        <span
+          className={
+            "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-900 " +
             className
           }
         >

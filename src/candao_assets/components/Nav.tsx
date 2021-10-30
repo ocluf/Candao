@@ -10,7 +10,7 @@ type Tab = "Dashboard" | "Members" | "Canisters" | "Proposals";
 type NavInfo = { name: Tab; href: string };
 
 const navigation: Array<NavInfo> = [
-  { name: "Dashboard", href: "/dao" },
+  { name: "Dashboard", href: "/dashboard" },
   { name: "Members", href: "/members" },
   { name: "Canisters", href: "/canisters" },
   { name: "Proposals", href: "/proposals" },
@@ -38,11 +38,7 @@ export const Nav: React.FC<{ current?: Tab; showMenu?: boolean }> = ({
         balance = "error";
       }
     }
-    return (
-      <div className="border border-white rounded text-white  py-1 px-2  mr-4">
-        {balance}
-      </div>
-    );
+    return <div className=" text-white  py-1 px-2  mr-4">{balance}</div>;
   };
 
   return (

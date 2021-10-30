@@ -9,7 +9,13 @@ const Members: NextPage = () => {
   return (
     <div className="h-screen bg-gray-100">
       <Nav current="Members"></Nav>
-      <PageHeading crumbs={["Dashboard", "Members"]} pageTitle="Members">
+      <PageHeading
+        crumbs={[
+          { title: "Dashboard", href: "/dashboard" },
+          { title: "Members", href: "#" },
+        ]}
+        pageTitle="Members"
+      >
         <Link href="/proposals/new">
           <a
             type="button"

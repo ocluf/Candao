@@ -149,8 +149,8 @@ const ProposalCard: React.FC<{
   members: Array<Member>;
   canisters: Array<Canister>;
   currentUserPrincipal: Principal;
-}> = ({ proposal, members, canisters, currentUserPrincipal }) => {
-  const { actor } = useActor();
+  vote: (id: bigint, vote: boolean) => Promise<void>;
+}> = ({ proposal, members, canisters, currentUserPrincipal, vote }) => {
   const isAnonymous: boolean = currentUserPrincipal.isAnonymous();
   const votedNo = proposal.no_votes.find(
     (p) => p.toString() === currentUserPrincipal.toString()
@@ -286,7 +286,7 @@ const ProposalCard: React.FC<{
                 color="green"
                 disabled={isAnonymous}
                 className="text-xs leading-4 justify-center"
-                onClick={() => actor.vote(proposal.proposal_id, { Yes: null })}
+                onClick={() => vote(proposal.proposal_id, true)}
               >
                 Approve
               </Button>
@@ -294,7 +294,7 @@ const ProposalCard: React.FC<{
                 color="red"
                 disabled={isAnonymous}
                 className="text-xs leading-4 justify-center"
-                onClick={() => actor.vote(proposal.proposal_id, { No: null })}
+                onClick={() => vote(proposal.proposal_id, false)}
               >
                 Reject
               </Button>
@@ -356,7 +356,11 @@ const VoteInfo: React.FC<{
           </div>
         );
       } else {
-        return <div>Not voted</div>;
+        return (
+          <div className="flex items-center justify-between">
+            <Badge text="Did not vote" color="gray"></Badge>
+          </div>
+        );
       }
 
     // break
@@ -409,7 +413,7 @@ const Proposals: NextPage = () => {
     enumIs(p.proposal_status, "InProgress")
   );
 
-  const otherProposals = currentProposals?.filter(
+  const NotInProgressProposals = currentProposals?.filter(
     (p) => !enumIs(p.proposal_status, "InProgress")
   );
 
@@ -434,7 +438,10 @@ const Proposals: NextPage = () => {
     <div className="min-h-screen bg-gray-100">
       <Nav current="Proposals"></Nav>
       <PageHeading
-        crumbs={["Dashboard", "Proposals"]}
+        crumbs={[
+          { title: "Dashboard", href: "/dashboard" },
+          { title: "Proposals", href: "#" },
+        ]}
         pageTitle="Proposals"
         className="drop-shadow-none"
       >
@@ -495,141 +502,158 @@ const Proposals: NextPage = () => {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col space-y-4">
-          {InProgressProposals &&
-            daoMembers &&
-            canisters &&
-            authClient &&
-            InProgressProposals.map((proposal) => (
-              <ProposalCard
-                key={proposal.proposal_id.toString()}
-                proposal={proposal}
-                members={daoMembers}
-                canisters={canisters}
-                currentUserPrincipal={authClient.getIdentity().getPrincipal()}
-              ></ProposalCard>
-            ))}
-        </div>
-        <h1 className="text-2xl leading-9 font-medium mt-8 md:mt-16 mb-4 ">
-          Executed Proposals
-        </h1>
-        {proposals &&
+        {InProgressProposals &&
+          InProgressProposals.length === 0 &&
+          NotInProgressProposals &&
+          NotInProgressProposals.length === 0 && (
+            <div className="flex p-16 justify-center items-center text-xl">
+              No proposals yet
+            </div>
+          )}
+
+        {InProgressProposals &&
+          InProgressProposals.length > 0 &&
+          daoMembers &&
+          canisters &&
+          authClient && (
+            <div className="flex flex-col space-y-4 mb-4 md:mb-8 ">
+              {InProgressProposals.map((proposal) => (
+                <ProposalCard
+                  key={proposal.proposal_id.toString()}
+                  proposal={proposal}
+                  members={daoMembers}
+                  canisters={canisters}
+                  currentUserPrincipal={authClient.getIdentity().getPrincipal()}
+                  vote={vote}
+                ></ProposalCard>
+              ))}{" "}
+            </div>
+          )}
+
+        {NotInProgressProposals &&
+          NotInProgressProposals.length > 0 &&
           !proposalsLoading &&
           daoMembers &&
           !daoMembersLoading &&
           canisters &&
           !canistersLoading && (
-            <div className="shadow overflow-x-scroll	 border-b border-gray-200 sm:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200 ">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      DATETIME
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Proposal
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Description
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Proposer
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Your vote
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {otherProposals &&
-                    otherProposals
-                      .slice()
-                      .reverse()
-                      .map((proposal, personIdx) => (
-                        <tr
-                          key={proposal.proposal_id.toString()}
-                          className={
-                            personIdx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                          }
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
-                            {new Date(
-                              Number(proposal.proposal_date) / 1_000_000
-                            ).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {getProposalTypeName(proposal.proposal_type)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <ProposalSummary
-                              proposal={proposal}
-                              members={daoMembers}
-                              canisters={canisters}
-                            ></ProposalSummary>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {resolveMemberPrincipalId(
-                              daoMembers,
-                              proposal.proposer
-                            )}
-                          </td>
+            <>
+              <h1 className="text-2xl leading-9 font-medium mb-4 ">
+                Executed Proposals
+              </h1>
+              <div className="shadow overflow-x-scroll border-b border-gray-200 sm:rounded-lg">
+                <table className="min-w-full divide-y divide-gray-200 ">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        DATETIME
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Proposal
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Description
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Proposer
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Status
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Your vote
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {NotInProgressProposals &&
+                      NotInProgressProposals.slice()
+                        .reverse()
+                        .map((proposal, personIdx) => (
+                          <tr
+                            key={proposal.proposal_id.toString()}
+                            className={
+                              personIdx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                            }
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
+                              {new Date(
+                                Number(proposal.proposal_date) / 1_000_000
+                              ).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {getProposalTypeName(proposal.proposal_type)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <ProposalSummary
+                                proposal={proposal}
+                                members={daoMembers}
+                                canisters={canisters}
+                              ></ProposalSummary>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {resolveMemberPrincipalId(
+                                daoMembers,
+                                proposal.proposer
+                              )}
+                            </td>
 
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                            <div className="flex items-center justify-between">
-                              {
-                                <Badge
-                                  text={getProposalStatusName(
-                                    proposal.proposal_status
-                                  )}
-                                  color={
-                                    getProposalStatusName(
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                              <div className="flex items-center justify-between">
+                                {
+                                  <Badge
+                                    text={getProposalStatusName(
                                       proposal.proposal_status
-                                    ) === "Executed"
-                                      ? "blue"
-                                      : "red"
-                                  }
-                                ></Badge>
-                              }
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <VoteInfo
-                              onVote={(approve) =>
-                                vote(proposal.proposal_id, approve)
-                              }
-                              proposal={proposal}
-                              userPrincipal={
-                                authClient?.getIdentity().getPrincipal()!
-                              }
-                              working={working[proposal.proposal_id.toString()]}
-                            ></VoteInfo>
-                          </td>
-                        </tr>
-                      ))}
-                </tbody>
-              </table>
-            </div>
+                                    )}
+                                    color={
+                                      getProposalStatusName(
+                                        proposal.proposal_status
+                                      ) === "Executed"
+                                        ? "blue"
+                                        : "red"
+                                    }
+                                  ></Badge>
+                                }
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <VoteInfo
+                                onVote={(approve) =>
+                                  vote(proposal.proposal_id, approve)
+                                }
+                                proposal={proposal}
+                                userPrincipal={
+                                  authClient?.getIdentity().getPrincipal()!
+                                }
+                                working={
+                                  working[proposal.proposal_id.toString()]
+                                }
+                              ></VoteInfo>
+                            </td>
+                          </tr>
+                        ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
       </main>
     </div>
