@@ -9,7 +9,13 @@ const CanisterPage: NextPage = () => {
   return (
     <div className="h-screen bg-gray-100">
       <Nav current="Canisters" />
-      <PageHeading crumbs={["Dashboard", "Canisters"]} pageTitle="Canisters">
+      <PageHeading
+        crumbs={[
+          { title: "Dashboard", href: "/dashboard" },
+          { title: "Canisters", href: "#" },
+        ]}
+        pageTitle="Canisters"
+      >
         <Link href="/proposals/new?proposalType=LinkCanister">
           <a
             type="button"

@@ -95,7 +95,7 @@ const Invite: NextPage = () => {
             {enumIs(invitationStatus[0].status, "Executed") && (
               <Alert title="Invitation request accepted" variant="success">
                 <p>Your request has been accepted, you are now a member.</p>
-                <Link href="/dao">
+                <Link href="/dashboard">
                   <a>
                     <Button variant="outline" color="green" className="mt-6">
                       Proceed to the dashboard

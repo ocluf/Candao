@@ -55,7 +55,11 @@ const Proposals: NextPage = () => {
     <div className="min-h-screen bg-gray-100">
       <Nav current="Proposals"></Nav>
       <PageHeading
-        crumbs={["Dashboard", "Proposals", "New"]}
+        crumbs={[
+          { title: "Dashboard", href: "/dashboard" },
+          { title: "Proposals", href: "/proposals" },
+          { title: "New", href: "#" },
+        ]}
         pageTitle="New Proposal"
       ></PageHeading>
       {typeof queryparams === "object" && (

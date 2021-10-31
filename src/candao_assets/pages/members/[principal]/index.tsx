@@ -72,7 +72,11 @@ const Members: NextPage = () => {
         <div className="h-screen bg-gray-100">
           <Nav current="Members"></Nav>
           <PageHeading
-            crumbs={["Dashboard", "Members", "Member profile"]}
+            crumbs={[
+              { title: "Dashboard", href: "dashboard}" },
+              { title: "Members", href: "/members" },
+              { title: "Member profile", href: "#" },
+            ]}
             pageTitle="Member"
             className="bg-white"
           >

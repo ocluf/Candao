@@ -56,7 +56,7 @@ const Home: NextPage = () => {
           // dao claimed but hasn't been configured
           router.push("/claim");
         } else {
-          router.push("/dao");
+          router.push("/dashboard");
         }
       } else {
         // logged in but no member
@@ -85,51 +85,53 @@ const Home: NextPage = () => {
           viewState
         ) && (
           <>
-            <span className="block text-indigo-600 leading-6 font-semibold tracking-wide uppercase mb-2">
-              About CanDAO
-            </span>
-            <h1 className="text-4xl leading-10 font-extrabold tracking-tight mb-8">
-              What is a DAO?
-            </h1>
+            <div className="px-5">
+              <span className="block text-indigo-600 leading-6 font-semibold tracking-wide uppercase mb-2">
+                About CanDAO
+              </span>
+              <h1 className="text-4xl leading-10 font-extrabold tracking-tight mb-8">
+                What is a DAO?
+              </h1>
 
-            <p className="text-lg leading-7 font-normal text-gray-700 mb-6">
-              Wikipedia defines DAO (Decentralized Autonomous Organization) as
-              an organization represented by rules encoded as a transparent
-              computer program, controlled by the organization members, and not
-              influenced by a central government. As the rules are embedded into
-              the code, no managers are needed, thus removing any bureaucracy or
-              hierarchy hurdles.
-            </p>
+              <p className="text-lg leading-7 font-normal text-gray-700 mb-6">
+                Wikipedia defines DAO (Decentralized Autonomous Organization) as
+                an organization represented by rules encoded as a transparent
+                computer program, controlled by the organization members, and
+                not influenced by a central government. As the rules are
+                embedded into the code, no managers are needed, thus removing
+                any bureaucracy or hierarchy hurdles.
+              </p>
 
-            <h2 className="text-xl leading-8 font-semibold mb-4">
-              What to use CanDAO for?
-            </h2>
+              <h2 className="text-xl leading-8 font-semibold mb-4">
+                What to use CanDAO for?
+              </h2>
 
-            <p className="mb-6 text-lg leading-7 font-normal text-gray-700">
-              CanDAO works on the{" "}
-              <span className="text-indigo-400">
-                Internet Computer blockchain
-              </span>{" "}
-              and allows you such things as:{" "}
-            </p>
-            <ul className="list-disc ml-7 text-gray-700 leading-7 font-normal">
-              <li>controlling canister code by voting on proposals</li>
-              <li>controlling canister code by voting on proposals</li>
-              <li>controlling canister code by voting on proposals</li>
-            </ul>
+              <p className="mb-6 text-lg leading-7 font-normal text-gray-700">
+                CanDAO works on the{" "}
+                <span className="text-indigo-400">
+                  Internet Computer blockchain
+                </span>{" "}
+                and allows you to:{" "}
+              </p>
+              <ul className="list-disc ml-7 text-gray-700 leading-7 font-normal">
+                <li>Form a global organistation in a few clicks</li>
+                <li>democratically manage your canisters</li>
+                <li>gain insight into the history of your canisters</li>
+              </ul>
 
-            {viewState === ViewState.Unclaimed && (
-              <button
-                type="button"
-                className="mt-8 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                onClick={() => login()}
-              >
-                Login to claim this DAO
-              </button>
-            )}
+              {viewState === ViewState.Unclaimed && (
+                <button
+                  type="button"
+                  className="mt-8 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  onClick={() => login()}
+                >
+                  Login to claim this DAO
+                </button>
+              )}
+            </div>
 
             {viewState === ViewState.UnclaimedLoggedIn && (
-              <div className="mt-8">
+              <div className="px-5 mt-8">
                 <button
                   type="button"
                   onClick={() => {
@@ -163,29 +165,30 @@ const Home: NextPage = () => {
           viewState
         ) && (
           <>
-            <span className="block text-indigo-600 leading-6 font-semibold tracking-wide uppercase mb-2">
-              THIS IS A CANDAO CANISTER
-            </span>
-            <h1 className="text-4xl leading-10 font-extrabold tracking-tight mb-8">
-              {daoInfo?.title}
-            </h1>
+            <div className="text-center mt-10">
+              <h1 className="text-4xl leading-10 font-extrabold tracking-tight mb-8">
+                {daoInfo?.title}
+              </h1>
 
-            <p className="text-lg leading-7 font-normal text-gray-700 mb-6">
-              {daoInfo?.description || (
-                <span className="italic text-gray-400 text-sm">
-                  This DAO has no public description
-                </span>
-              )}
-            </p>
+              <p className="text-lg leading-7 font-normal text-gray-700 mb-6">
+                {daoInfo?.description || (
+                  <span className="italic text-gray-400 text-sm">
+                    This DAO has no public description
+                  </span>
+                )}
+              </p>
+            </div>
 
             {viewState === ViewState.Claimed && (
-              <button
-                type="button"
-                className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                onClick={() => login()}
-              >
-                Log in to this DAO
-              </button>
+              <div className="flex justify-around">
+                <button
+                  type="button"
+                  className=" inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  onClick={() => login()}
+                >
+                  Log in to this DAO
+                </button>
+              </div>
             )}
 
             {viewState === ViewState.ClaimedNonMember && (

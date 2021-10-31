@@ -1,7 +1,14 @@
 /* This example requires Tailwind CSS v2.0+ */
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/solid";
+import Link from "next/link";
+import React from "react";
 
-const BreadCrumbs: React.FC<{ crumbs: Array<String> }> = ({ crumbs }) => {
+type Crumb = {
+  title: string;
+  href: string;
+};
+
+const BreadCrumbs: React.FC<{ crumbs: Array<Crumb> }> = ({ crumbs }) => {
   return (
     <div>
       <nav className="sm:hidden" aria-label="Back">
@@ -33,9 +40,9 @@ const BreadCrumbs: React.FC<{ crumbs: Array<String> }> = ({ crumbs }) => {
                       aria-hidden="true"
                     />
                   ) : null}
-                  <a href="#" className={classes}>
-                    {crumb}
-                  </a>
+                  <Link href={crumb.href}>
+                    <a className={classes}>{crumb.title}</a>
+                  </Link>
                 </div>
               </li>
             );
@@ -48,7 +55,7 @@ const BreadCrumbs: React.FC<{ crumbs: Array<String> }> = ({ crumbs }) => {
 
 const PageHeading: React.FC<{
   pageTitle: String;
-  crumbs: Array<String>;
+  crumbs: Array<Crumb>;
   className?: String;
 }> = ({ children, pageTitle, crumbs, className }) => {
   return (

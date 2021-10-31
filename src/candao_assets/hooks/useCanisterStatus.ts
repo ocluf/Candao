@@ -4,7 +4,7 @@ import { useActor } from "../components/ActorProvider";
 
 export function useCanisterStatus(canisterId: Principal) {
   const { actor } = useActor();
-  const { isLoading, error, data } = useQuery(
+  const { isLoading, error, data, refetch } = useQuery(
     "canister_status_" + canisterId.toString(),
     () => actor.get_canister_status(canisterId)
   );
@@ -13,5 +13,6 @@ export function useCanisterStatus(canisterId: Principal) {
     statusLoading: isLoading,
     statusError: error,
     canisterStatus: data,
+    refetchCanisterStatus: refetch,
   };
 }

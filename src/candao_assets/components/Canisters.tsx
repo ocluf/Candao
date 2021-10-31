@@ -6,30 +6,43 @@ import { PlayIcon, StopIcon } from "@heroicons/react/solid";
 import { UploadIcon } from "@heroicons/react/outline";
 import { useActor } from "./ActorProvider";
 import WarningModal from "./WarningModal";
-import { useState } from "react";
+import React, { useState } from "react";
+import { FiLoader } from "react-icons/fi";
+import { useDaoMembers } from "../hooks/useDaoMembers";
 
 const CanisterCard: React.FC<{ canister: Canister }> = ({ canister }) => {
-  const { statusLoading, statusError, canisterStatus } = useCanisterStatus(
-    canister.canister_id
-  );
+  const { statusLoading, statusError, canisterStatus, refetchCanisterStatus } =
+    useCanisterStatus(canister.canister_id);
+  const { daoMembers } = useDaoMembers();
 
   const { actor } = useActor();
   const [isModalOpen, setModalOpen] = useState(false);
+  const [working, setWorking] = useState(false);
 
   const stopCanister = async () => {
+    setWorking(true);
     await actor.create_proposal({
       StopCanister: {
         canister_id: canister.canister_id,
       },
     });
+    if (daoMembers?.length === 1) {
+      await refetchCanisterStatus();
+    }
+    setWorking(false);
   };
 
   const startCanister = async () => {
+    setWorking(true);
     await actor.create_proposal({
       StartCanister: {
         canister_id: canister.canister_id,
       },
     });
+    if (daoMembers?.length === 1) {
+      await refetchCanisterStatus();
+    }
+    setWorking(false);
   };
 
   const warningMessage = (
@@ -41,7 +54,11 @@ const CanisterCard: React.FC<{ canister: Canister }> = ({ canister }) => {
 
   const statusButton = () => {
     if (statusLoading) {
-      return "loading...";
+      return (
+        <div className="flex items-center">
+          <FiLoader className="animate-spin  mr-3"></FiLoader> Loading...
+        </div>
+      );
     } else if (statusError) {
       return "error";
     } else {
@@ -50,12 +67,14 @@ const CanisterCard: React.FC<{ canister: Canister }> = ({ canister }) => {
         return (
           <>
             <button
-              className="flex flex-row text-red-500"
+              className="flex flex-row items-center	 text-red-500 cursor-pointer"
               onClick={() => {
                 setModalOpen(true);
               }}
             >
-              <StopIcon className="w-5 mr-2 "></StopIcon> <div>Stop</div>{" "}
+              {working && <FiLoader className="animate-spin  mr-3"></FiLoader>}
+              {!working && <StopIcon className="w-5 mr-2 "></StopIcon>}
+              <div>Stop</div>
             </button>
             <WarningModal
               title="Stop Canister"
@@ -71,10 +90,12 @@ const CanisterCard: React.FC<{ canister: Canister }> = ({ canister }) => {
       } else if (status && getCanisterStatusName(status) == "Stopped") {
         return (
           <button
-            className="flex flex-row text-green-500"
+            className="flex items-center flex-row text-green-500"
             onClick={() => startCanister()}
           >
-            <PlayIcon className="w-5 mr-2 "></PlayIcon> <div>Start</div>{" "}
+            {working && <FiLoader className="animate-spin  mr-3"></FiLoader>}
+            {!working && <PlayIcon className="w-5 mr-2 "></PlayIcon>}
+            <div>Start</div>
           </button>
         );
       } else {
