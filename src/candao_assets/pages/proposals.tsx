@@ -150,7 +150,16 @@ const ProposalCard: React.FC<{
   canisters: Array<Canister>;
   currentUserPrincipal: Principal;
   vote: (id: bigint, vote: boolean) => Promise<void>;
-}> = ({ proposal, members, canisters, currentUserPrincipal, vote }) => {
+  working: false | "yes" | "no";
+}> = ({
+  proposal,
+  members,
+  canisters,
+  currentUserPrincipal,
+  vote,
+  working,
+}) => {
+  const [isVoting, setIsVoting] = useState<boolean>(false);
   const isAnonymous: boolean = currentUserPrincipal.isAnonymous();
   const votedNo = proposal.no_votes.find(
     (p) => p.toString() === currentUserPrincipal.toString()
@@ -284,17 +293,23 @@ const ProposalCard: React.FC<{
             <>
               <Button
                 color="green"
-                disabled={isAnonymous}
+                disabled={isAnonymous || working === "no"}
+                working={working === "yes"}
                 className="text-xs leading-4 justify-center"
-                onClick={() => vote(proposal.proposal_id, true)}
+                onClick={() => {
+                  vote(proposal.proposal_id, true);
+                }}
               >
                 Approve
               </Button>
               <Button
                 color="red"
-                disabled={isAnonymous}
+                disabled={isAnonymous || working === "yes"}
+                working={working === "no"}
                 className="text-xs leading-4 justify-center"
-                onClick={() => vote(proposal.proposal_id, false)}
+                onClick={() => {
+                  vote(proposal.proposal_id, false);
+                }}
               >
                 Reject
               </Button>
@@ -525,6 +540,7 @@ const Proposals: NextPage = () => {
                   canisters={canisters}
                   currentUserPrincipal={authClient.getIdentity().getPrincipal()}
                   vote={vote}
+                  working={working[proposal.proposal_id.toString()]}
                 ></ProposalCard>
               ))}{" "}
             </div>
