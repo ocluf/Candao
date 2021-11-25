@@ -205,7 +205,7 @@ const ProposalCard: React.FC<{
       const relevantCanisterId =
         proposal.proposal_type.InstallCanister.canister_id;
       const relevantCanister = canisters.find(
-        (c) => c.canister_id === relevantCanisterId
+        (c) => c.canister_id.toString() === relevantCanisterId.toString()
       );
       const mode = getInstallModeName(
         proposal.proposal_type.InstallCanister.mode
@@ -283,7 +283,7 @@ const ProposalCard: React.FC<{
       <div className="flex mt-4 justify-between">
         <div className="md:ml-5">
           <VoteDisplay
-            total={members.length}
+            total={members.filter((m) => m.can_vote).length}
             approved={proposal.yes_votes.length}
             rejected={proposal.no_votes.length}
           />

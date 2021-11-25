@@ -3,7 +3,11 @@ import { Canister } from "../declarations/candao/candao.did";
 import { useCanisterStatus } from "../hooks/useCanisterStatus";
 import { getCanisterStatusName } from "../utils/proposals";
 import { PlayIcon, StopIcon } from "@heroicons/react/solid";
-import { UploadIcon } from "@heroicons/react/outline";
+import {
+  ExternalLinkIcon,
+  LinkIcon,
+  UploadIcon,
+} from "@heroicons/react/outline";
 import { useActor } from "./ActorProvider";
 import WarningModal from "./WarningModal";
 import React, { useState } from "react";
@@ -107,12 +111,22 @@ const CanisterCard: React.FC<{ canister: Canister }> = ({ canister }) => {
   return (
     <li className="col-span-1 bg-white rounded-lg shadow divide-y divide-gray-200">
       <div className="w-full flex flex-col items-center justify-between p-6 mb-auto">
-        <div className="flex justify center">
-          <h3 className="text-gray-900 text-sm mx-auto font-medium truncate">
+        <div className="w-full">
+          <h3 className="text-gray-900 text-sm text-center font-medium">
             {canister.name}
+            <a
+              href={`https://${canister.canister_id.toString()}.raw.ic0.app`}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              <ExternalLinkIcon className="inline w-4 ml-2"></ExternalLinkIcon>
+            </a>
           </h3>
         </div>
         <p className="mt-1 flex-grow text-gray-500 w-full h-16 pb-4 break-word text-center text-sm overflow-hidden">
+          {canister.canister_id.toString()}
+        </p>
+        <p className="mt-1 flex-grow text-gray-500 w-full pb-4 break-word text-center text-sm overflow-hidden">
           {canister.description}
         </p>
       </div>
@@ -125,7 +139,7 @@ const CanisterCard: React.FC<{ canister: Canister }> = ({ canister }) => {
           </div>
           <div className="-ml-px w-0 flex-1 flex">
             <a className="relative w-0 flex-1 inline-flex items-center justify-center py-4 text-sm text-gray-700 font-medium border border-transparent rounded-br-lg hover:text-gray-500">
-              <span className="flex flex-row">
+              <span className="flex flex-row cursor-pointer">
                 <UploadIcon className="w-5 mr-2"></UploadIcon> Update
               </span>
             </a>
